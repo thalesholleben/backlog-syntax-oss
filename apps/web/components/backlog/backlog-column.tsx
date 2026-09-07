@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n/provider";
 
 import { useDroppable } from "@dnd-kit/core";
 import type { ReactNode } from "react";
@@ -26,6 +27,8 @@ export function BacklogColumn({
   children: ReactNode;
   empty: boolean;
 }) {
+  const { t } = useI18n();
+
   const { setNodeRef, isOver } = useDroppable({
     id: `column:${column.key}`,
     data: { status: column.key },
@@ -35,7 +38,7 @@ export function BacklogColumn({
   return (
     <section
       ref={setNodeRef}
-      aria-label={`Coluna ${column.label}`}
+      aria-label={t("Coluna {0}", { "0": t(column.label) })}
       data-alvo={isOver || undefined}
       className="flex min-w-0 flex-col rounded-panel p-1 transition-colors data-[alvo]:bg-[var(--ink-drop)] data-[alvo]:shadow-[inset_0_0_0_1.5px_var(--accent)]"
     >
@@ -53,7 +56,7 @@ export function BacklogColumn({
             isDone ? "text-[rgba(18,18,18,.62)]" : "text-ink-muted"
           }`}
         >
-          {column.label}
+          {t(column.label)}
         </h2>
         <span
           className={`ml-auto shrink-0 rounded-full px-2 py-1 font-mono text-[10px] font-extrabold leading-none ${
@@ -70,7 +73,7 @@ export function BacklogColumn({
         {children}
         {empty ? (
           <p className="grid min-h-16 place-items-center rounded-control border-[1.5px] border-dashed border-ink-line px-2.5 py-4 text-center font-mono text-[10px] font-semibold leading-[1.6] text-ink-faint">
-            {column.empty}
+            {t(column.empty)}
           </p>
         ) : null}
       </div>

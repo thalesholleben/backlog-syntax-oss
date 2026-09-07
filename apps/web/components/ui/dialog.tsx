@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/provider";
 import { X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
@@ -27,6 +28,8 @@ export function Dialog({
   variant = "modal",
   className,
 }: DialogProps) {
+  const { t } = useI18n();
+
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -77,7 +80,7 @@ export function Dialog({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Fechar"
+            aria-label={t("Fechar")}
             className="flex size-10 shrink-0 items-center justify-center rounded-full text-muted hover:bg-panel hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-accent"
           >
             <X aria-hidden="true" className="size-5" />

@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/provider";
 import {
   BookOpen,
   CalendarDays,
@@ -9,9 +10,11 @@ import {
   Plus,
   Settings,
 } from "lucide-react";
-import Link from "next/link";
-import { useParams, usePathname, useRouter } from "next/navigation";
+import Link from "@/lib/i18n/navigation";
+import { usePathname, useRouter } from "@/lib/i18n/navigation";
+import { useParams } from "next/navigation";
 import type { ReactNode } from "react";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { ProductBrand } from "@/components/product-brand";
 import { Menu, MenuItem } from "@/components/ui/menu";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,6 +29,8 @@ import { useWebMcpTools } from "@/lib/webmcp/use-webmcp-tools";
  * com ele por atenção nem repetir controle.
  */
 export function AppShell({ children }: { children: ReactNode }) {
+  const { t } = useI18n();
+
   const params = useParams<{ workspaceSlug: string; projectSlug?: string }>();
   const pathname = usePathname();
   const router = useRouter();
@@ -89,14 +94,17 @@ export function AppShell({ children }: { children: ReactNode }) {
                   }}
                 >
                   <Plus aria-hidden="true" className="size-4" />
-                  Novo workspace
+                  {t("Novo workspace")}
                 </MenuItem>
               </>
             )}
           </Menu>
 
           {summary ? (
-            <nav aria-label="Áreas do workspace" className="ml-2 hidden items-center gap-1 md:flex">
+            <nav
+              aria-label={t("Áreas do workspace")}
+              className="ml-2 hidden items-center gap-1 md:flex"
+            >
               <AppNavLink
                 href={`/w/${summary.slug}`}
                 label="Backlog"
@@ -114,7 +122,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               />
               <AppNavLink
                 href={`/w/${summary.slug}/documentacao`}
-                label="Documentação"
+                label={t("Documentação")}
                 icon={BookOpen}
                 active={pathname.startsWith(`/w/${summary.slug}/documentacao`)}
               />
@@ -122,11 +130,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           ) : null}
 
           <div className="ml-auto flex items-center gap-1.5">
+            <LanguageSwitcher />
             {summary ? (
               <Link
                 href={`/w/${summary.slug}/configuracoes`}
                 className="flex size-10 items-center justify-center rounded-full text-muted hover:bg-panel hover:text-foreground max-sm:hidden"
-                aria-label="Configurações do workspace"
+                aria-label={t("Configurações do workspace")}
               >
                 <Settings aria-hidden="true" className="size-5" />
               </Link>
@@ -139,7 +148,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   type="button"
                   onClick={toggle}
                   aria-expanded={open}
-                  aria-label="Menu da conta"
+                  aria-label={t("Menu da conta")}
                   className="flex size-10 items-center justify-center rounded-full bg-contrast text-sm font-bold text-contrast-foreground"
                 >
                   {session.data?.user.name?.[0]?.toUpperCase() ?? "?"}
@@ -161,7 +170,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     }}
                   >
                     <LogOut aria-hidden="true" className="size-4" />
-                    Sair
+                    {t("Sair")}
                   </MenuItem>
                 </>
               )}
@@ -174,7 +183,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {summary ? (
         <nav
-          aria-label="Navegação principal"
+          aria-label={t("Navegação principal")}
           className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-4 rounded-[1.35rem] border border-line bg-surface/95 p-1.5 shadow-pop backdrop-blur-md md:hidden"
         >
           <MobileNavLink
@@ -200,7 +209,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           />
           <MobileNavLink
             href={`/w/${summary.slug}/configuracoes`}
-            label="Ajustes"
+            label={t("Ajustes")}
             icon={Settings}
             active={pathname.startsWith(`/w/${summary.slug}/configuracoes`)}
           />

@@ -140,24 +140,16 @@ for (const width of [320, 390, 820, 1024, 1280, 1440, 1920]) {
   });
 }
 
-test("hero artwork and copy remain usable without JavaScript", async ({ browser, baseURL }) => {
-  if (!baseURL) throw new Error("A local baseURL is required");
-  const context = await browser.newContext({
-    baseURL,
-    javaScriptEnabled: false,
-    viewport: { width: 390, height: 1000 },
-  });
-  try {
-    const page = await context.newPage();
+test.describe("Portuguese HTML without JavaScript", () => {
+  test.use({ javaScriptEnabled: false, viewport: { width: 390, height: 1000 } });
+  test("hero artwork and copy remain usable without JavaScript", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator(".bl-home-hero img")).toBeVisible();
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await expect(
       page.locator(".bl-home-hero").getByRole("link", { name: "Criar conta grátis" }),
     ).toHaveAttribute("href", "/cadastro");
-  } finally {
-    await context.close();
-  }
+  });
 });
 
 test("legal pages are reachable and render a single H1", async ({ page }) => {

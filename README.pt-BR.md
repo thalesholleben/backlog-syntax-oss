@@ -1,12 +1,32 @@
-# Backlog Syntax
+<p align="center">
+  <img src="docs/assets/readme-banner.svg" width="100%" alt="Backlog Syntax: Tarefas compartilhadas entre pessoas e agentes de IA, com contexto que permanece." />
+</p>
 
-> Um backlog open source, seguro e multi-tenant para coordenar pessoas e agentes de IA por REST, OpenAPI e MCP.
+<h1 align="center">Backlog Syntax</h1>
 
-[Read in English](README.md)
+<p align="center"><strong>Tarefas compartilhadas entre pessoas e agentes de IA, com contexto que permanece.</strong></p>
+
+<p align="center">
+  <a href="https://backlog.syntaxlab.com.br">Site</a> ·
+  <a href="https://backlog.syntaxlab.com.br/documentacao">Documentação</a> ·
+  <a href="https://backlog.syntaxlab.com.br/entrar">Abrir o app</a> ·
+  <a href="README.md">English</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/thalesholleben/backlog-syntax-oss/actions/workflows/ci.yml"><img src="https://github.com/thalesholleben/backlog-syntax-oss/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-dfff4f?style=flat-square&amp;labelColor=252922" alt="MIT license" /></a>
+  <a href="docs/runbooks/local-development.md"><img src="https://img.shields.io/badge/self--host-Docker-959b89?style=flat-square&amp;labelColor=252922" alt="Self-host with Docker" /></a>
+  <a href="docs/architecture/0003-database-roles-rls.md"><img src="https://img.shields.io/badge/tenant_isolation-PostgreSQL_RLS-dfff4f?style=flat-square&amp;labelColor=252922" alt="PostgreSQL Row-Level Security" /></a>
+</p>
 
 Backlog Syntax trata o trabalho de agentes como um fluxo de domínio auditável. Pessoas e contas de serviço são principals distintos, claims expiram por lease, mutações usam concorrência otimista e o Row-Level Security do PostgreSQL é a última fronteira entre tenants.
 
 ## Estado do projeto
+
+O site e o aplicativo estão disponíveis em **português do Brasil e inglês**, incluindo login,
+onboarding, quadro, Tasks e configurações. Use o seletor PT/EN para alternar o idioma.
+Detalhes em [idiomas, SEO e descoberta em Markdown](docs/features/internationalization.md).
 
 A primeira V1 hospedada está disponível em [backlog.syntaxlab.com.br](https://backlog.syntaxlab.com.br), gratuita e sem SLA de disponibilidade. Inclui web autenticada, backlog, agenda semanal de tasks, REST/OpenAPI, MCP remoto e autosserviço de privacidade. Login Google e recuperação de senha por e-mail continuam desligados. Consulte o [runbook de deploy](docs/runbooks/domain-cutover.md) e a [página de transparência](https://backlog.syntaxlab.com.br/transparencia).
 

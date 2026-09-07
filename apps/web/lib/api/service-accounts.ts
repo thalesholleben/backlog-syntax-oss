@@ -42,10 +42,11 @@ export function createServiceAccountToken(
   serviceAccountId: string,
   scopes: ServiceAccountScope[],
   idempotencyKey: string,
+  name = "Token principal",
 ): Promise<CreatedServiceAccountToken> {
   return apiClient.post<CreatedServiceAccountToken>(
     `/v1/workspaces/${workspaceId}/api-tokens`,
-    { serviceAccountId, name: "Token principal", scopes },
+    { serviceAccountId, name, scopes },
     { idempotencyKey },
   );
 }

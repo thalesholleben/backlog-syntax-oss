@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/provider";
 import { OwnerAvatar } from "@/components/backlog/owner-avatar";
 import {
   AGE_BANDS,
@@ -30,12 +31,14 @@ const ownerFill: Record<string, string> = {
  * gráfico de aging WIP usado em kanban.
  */
 export function BacklogAging({ items }: { items: AgedTask[] }) {
+  const { t, locale } = useI18n();
+
   if (items.length === 0) {
     return (
       <section className="rounded-card bg-surface p-5 shadow-card sm:px-6 sm:py-[22px]">
-        <AgingHead scale="nada parado" />
+        <AgingHead scale={t("nada parado")} />
         <p className="grid min-h-16 place-items-center rounded-control border-[1.5px] border-dashed border-line px-2.5 py-4 text-center font-mono text-[10px] font-semibold text-faint">
-          nenhuma tarefa aberta neste filtro
+          {t("nenhuma tarefa aberta neste filtro")}
         </p>
       </section>
     );
@@ -62,12 +65,17 @@ export function BacklogAging({ items }: { items: AgedTask[] }) {
 
   return (
     <section className="rounded-card bg-surface p-5 shadow-card sm:px-6 sm:py-[22px]">
-      <AgingHead scale={`mediana ${pluralDays(median)} · mais antiga ${pluralDays(oldest)}`} />
+      <AgingHead
+        scale={t("mediana {0} · mais antiga {1}", {
+          "0": pluralDays(median, locale),
+          "1": pluralDays(oldest, locale),
+        })}
+      />
 
       <div className="mb-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
         {bands.map((band) => (
           <div
-            key={band.label}
+            key={t(band.label)}
             style={{ borderLeftColor: band.count ? band.color : "var(--line-strong)" }}
             className={`rounded-panel border-l-[3px] bg-panel px-3 py-[11px] ${band.count ? "" : "opacity-50"}`}
           >
@@ -78,7 +86,7 @@ export function BacklogAging({ items }: { items: AgedTask[] }) {
               {band.count}
             </b>
             <span className="mt-1.5 block font-mono text-[9px] font-semibold uppercase leading-[1.4] tracking-[0.1em] text-faint">
-              {band.label}
+              {t(band.label)}
             </span>
           </div>
         ))}
@@ -90,9 +98,12 @@ export function BacklogAging({ items }: { items: AgedTask[] }) {
             viewBox={`0 0 ${W} ${H}`}
             className="block h-auto w-full"
             role="img"
-            aria-label={`Dispersão de ${items.length} tarefas abertas: a altura é há quantos dias cada uma está parada e a coluna é o status em que ela travou. Mediana de ${pluralDays(median)}.`}
+            aria-label={t(
+              "Dispersão de {0} tarefas abertas: a altura é há quantos dias cada uma está parada e a coluna é o status em que ela travou. Mediana de {1}.",
+              { "0": items.length, "1": pluralDays(median, locale) },
+            )}
           >
-            <title>Envelhecimento das tarefas abertas por status</title>
+            <title>{t("Envelhecimento das tarefas abertas por status")}</title>
 
             {ticks.map((tick) => (
               <g key={tick}>
@@ -138,7 +149,7 @@ export function BacklogAging({ items }: { items: AgedTask[] }) {
                     fill="var(--muted)"
                     className="font-mono text-[9.5px] font-bold uppercase tracking-[0.12em]"
                   >
-                    {lane.label}
+                    {t(lane.label)}
                   </text>
                   <text
                     x={center}
@@ -147,7 +158,7 @@ export function BacklogAging({ items }: { items: AgedTask[] }) {
                     fill="var(--faint)"
                     className="font-mono text-[8.5px]"
                   >
-                    {inLane.length} {inLane.length === 1 ? "tarefa" : "tarefas"}
+                    {inLane.length} {inLane.length === 1 ? t("tarefa") : t("tarefas")}
                   </text>
                   {swarm(inLane, center, laneWidth).map(({ item, cx, cy, r }) => (
                     <circle
@@ -158,7 +169,12 @@ export function BacklogAging({ items }: { items: AgedTask[] }) {
                       fill={ownerFill[item.owner]}
                       opacity={0.85}
                     >
-                      <title>{`${item.task.title} · parada há ${pluralDays(item.days)}`}</title>
+                      <title>
+                        {t("{0} · parada há {1}", {
+                          "0": item.task.title,
+                          "1": pluralDays(item.days, locale),
+                        })}
+                      </title>
                     </circle>
                   ))}
                 </g>
@@ -200,14 +216,14 @@ export function BacklogAging({ items }: { items: AgedTask[] }) {
               fill="var(--faint)"
               className="font-mono text-[8.5px] font-bold tracking-[0.06em]"
             >
-              mediana {median}d
+              {t("mediana")} {median}d
             </text>
           </svg>
         </div>
 
         <div className="rounded-panel bg-panel px-3.5 py-3">
           <p className="mb-2.5 font-mono text-[9px] font-bold uppercase leading-none tracking-[0.12em] text-faint">
-            As mais paradas
+            {t("As mais paradas")}
           </p>
           {sortedByAge.slice(0, 7).map((item) => (
             <div
@@ -233,26 +249,26 @@ export function BacklogAging({ items }: { items: AgedTask[] }) {
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line-soft pt-3 font-mono text-[10px] font-semibold tracking-[0.04em] text-faint">
         <span className="inline-flex items-center gap-[7px]">
           <i className="block size-2 rounded-full bg-owner-human" />
-          Pessoas
+          {t("Pessoas")}
         </span>
         <span className="inline-flex items-center gap-[7px]">
           <i className="block size-2 rounded-full bg-owner-agent" />
-          Agentes
+          {t("Agentes")}
         </span>
         <span className="inline-flex items-center gap-[7px]">
           <i className="block size-2 rounded-full bg-owner-free" />
-          Livres
+          {t("Livres")}
         </span>
         <span className="inline-flex items-center gap-[7px]">
           <i className="block w-4 border-t-[1.5px] border-dashed border-faint" />
-          mediana
+          {t("mediana")}
         </span>
         <span className="inline-flex items-center gap-[7px]">
           <i className="block w-4 border-t-[1.5px] border-dashed border-status-blocked" />
-          limite de {STALE_LIMIT_DAYS} dias
+          {t("limite de")} {STALE_LIMIT_DAYS} {t("dias")}
         </span>
         <span className="ml-auto hidden opacity-75 sm:inline">
-          passe o mouse num ponto para ver a tarefa
+          {t("passe o mouse num ponto para ver a tarefa")}
         </span>
       </div>
     </section>
@@ -260,16 +276,19 @@ export function BacklogAging({ items }: { items: AgedTask[] }) {
 }
 
 function AgingHead({ scale }: { scale: string }) {
+  const { t } = useI18n();
+
   return (
     <div className="mb-4 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
       <div>
         <h2 className="text-[15px] font-extrabold tracking-[-0.03em]">
-          Há quanto tempo cada uma está parada
+          {t("Há quanto tempo cada uma está parada")}
         </h2>
         <p className="mt-1.5 max-w-[660px] text-[11.5px] leading-[1.55] text-muted">
-          Só as que não estão concluídas. Cada ponto é uma tarefa: quanto mais alto, há mais tempo
-          ela está parada; a coluna mostra em que status ela travou. Acima de {STALE_LIMIT_DAYS}{" "}
-          dias a etiqueta do card fica vermelha.
+          {t(
+            "Só as que não estão concluídas. Cada ponto é uma tarefa: quanto mais alto, há mais tempo ela está parada; a coluna mostra em que status ela travou. Acima de",
+          )}{" "}
+          {STALE_LIMIT_DAYS} {t("dias a etiqueta do card fica vermelha.")}
         </p>
       </div>
       <p className="shrink-0 rounded-full bg-panel px-3.5 py-[7px] font-mono text-[9.5px] font-semibold uppercase leading-none tracking-[0.12em] text-faint">

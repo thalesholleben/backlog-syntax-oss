@@ -1,6 +1,12 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import Link from "@/lib/i18n/navigation";
+
+import type { Translator } from "@/lib/i18n/translate";
+
+import { useI18n } from "@/lib/i18n/provider";
+import { useRouter } from "@/lib/i18n/navigation";
+import { useSearchParams } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -8,11 +14,14 @@ import { Field } from "@/components/ui/field";
 import { PasswordInput } from "@/components/ui/password-input";
 import { authClient } from "@/lib/auth-client";
 
-const ResetPasswordSchema = z.object({
-  newPassword: z.string().min(12, "A senha precisa ter pelo menos 12 caracteres."),
-});
+const ResetPasswordSchema = (t: Translator) =>
+  z.object({
+    newPassword: z.string().min(12, t("A senha precisa ter pelo menos 12 caracteres.")),
+  });
 
 export function ResetPasswordForm() {
+  const { t } = useI18n();
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -24,16 +33,16 @@ export function ResetPasswordForm() {
   if (!token) {
     return (
       <div className="space-y-3">
-        <h1 className="font-display text-3xl font-bold tracking-[-0.03em]">Link inválido</h1>
+        <h1 className="font-display text-3xl font-bold tracking-[-0.03em]">{t("Link inválido")}</h1>
         <p className="text-sm leading-6 text-muted">
-          Este link de redefinição está incompleto ou expirou. Peça um novo link.
+          {t("Este link de redefinição está incompleto ou expirou. Peça um novo link.")}
         </p>
-        <a
+        <Link
           href="/recuperar-senha"
           className="inline-block text-sm font-semibold underline decoration-line underline-offset-4"
         >
-          Solicitar novo link
-        </a>
+          {t("Solicitar novo link")}
+        </Link>
       </div>
     );
   }
@@ -43,7 +52,7 @@ export function ResetPasswordForm() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError(null);
-    const parsed = ResetPasswordSchema.safeParse({ newPassword });
+    const parsed = ResetPasswordSchema(t).safeParse({ newPassword });
     if (!parsed.success) {
       setFieldError(parsed.error.issues[0]?.message);
       return;
@@ -56,12 +65,12 @@ export function ResetPasswordForm() {
         token: verifiedToken,
       });
       if (result.error) {
-        setFormError("O link expirou ou já foi usado. Solicite um novo.");
+        setFormError(t("O link expirou ou já foi usado. Solicite um novo."));
         return;
       }
       router.push("/entrar");
     } catch {
-      setFormError("Não foi possível redefinir a senha agora. Tente de novo em instantes.");
+      setFormError(t("Não foi possível redefinir a senha agora. Tente de novo em instantes."));
     } finally {
       setIsLoading(false);
     }
@@ -70,8 +79,8 @@ export function ResetPasswordForm() {
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-5">
       <div>
-        <h1 className="font-display text-3xl font-bold tracking-[-0.03em]">Nova senha</h1>
-        <p className="mt-2 text-sm text-muted">Escolha uma senha nova para sua conta.</p>
+        <h1 className="font-display text-3xl font-bold tracking-[-0.03em]">{t("Nova senha")}</h1>
+        <p className="mt-2 text-sm text-muted">{t("Escolha uma senha nova para sua conta.")}</p>
       </div>
 
       {formError ? (
@@ -83,7 +92,7 @@ export function ResetPasswordForm() {
         </p>
       ) : null}
 
-      <Field label="Nova senha" hint="Pelo menos 12 caracteres." error={fieldError}>
+      <Field label={t("Nova senha")} hint="Pelo menos 12 caracteres." error={fieldError}>
         {({ inputId, describedBy }) => (
           <PasswordInput
             id={inputId}
@@ -98,7 +107,7 @@ export function ResetPasswordForm() {
       </Field>
 
       <Button type="submit" isLoading={isLoading} className="w-full">
-        Redefinir senha
+        {t("Redefinir senha")}
       </Button>
     </form>
   );

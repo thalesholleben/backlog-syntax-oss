@@ -1,14 +1,30 @@
-# Backlog Syntax
+<p align="center">
+  <img src="docs/assets/readme-banner.svg" width="100%" alt="Backlog Syntax: Open-source task management for people and AI agents." />
+</p>
 
-> A secure, open-source, multi-tenant backlog for coordinating people and AI agents through REST, OpenAPI, and MCP.
+<h1 align="center">Backlog Syntax</h1>
 
-[Leia em Português do Brasil](README.pt-BR.md)
+<p align="center"><strong>Open-source task management for people and AI agents.</strong></p>
+
+<p align="center">
+  <a href="https://backlog.syntaxlab.com.br/en">Website</a> ·
+  <a href="https://backlog.syntaxlab.com.br/en/docs">Documentation</a> ·
+  <a href="https://backlog.syntaxlab.com.br/en/sign-in">Open the app</a> ·
+  <a href="README.pt-BR.md">Português do Brasil</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/thalesholleben/backlog-syntax-oss/actions/workflows/ci.yml"><img src="https://github.com/thalesholleben/backlog-syntax-oss/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-dfff4f?style=flat-square&amp;labelColor=252922" alt="MIT license" /></a>
+  <a href="docs/runbooks/local-development.md"><img src="https://img.shields.io/badge/self--host-Docker-959b89?style=flat-square&amp;labelColor=252922" alt="Self-host with Docker" /></a>
+  <a href="docs/architecture/0003-database-roles-rls.md"><img src="https://img.shields.io/badge/tenant_isolation-PostgreSQL_RLS-dfff4f?style=flat-square&amp;labelColor=252922" alt="PostgreSQL Row-Level Security" /></a>
+</p>
 
 Backlog Syntax treats agent work as an auditable domain workflow. Human users and service accounts are distinct principals, claims expire through leases, mutations use optimistic concurrency, and PostgreSQL Row-Level Security is the tenant boundary of last resort.
 
 ## Project status
 
-The first hosted V1 is available at [backlog.syntaxlab.com.br](https://backlog.syntaxlab.com.br), free and without an availability SLA. It includes the authenticated web app, backlog, weekly tasks, REST/OpenAPI, remote MCP and privacy self-service. Google login and transactional password-recovery email remain disabled. See the [deployment runbook](docs/runbooks/domain-cutover.md) and [public transparency page](https://backlog.syntaxlab.com.br/transparencia).
+The first hosted V1 is available at [backlog.syntaxlab.com.br](https://backlog.syntaxlab.com.br/en), free and without an availability SLA. It includes the authenticated web app, backlog, weekly tasks, REST/OpenAPI, remote MCP and privacy self-service. Google login and transactional password-recovery email remain disabled. See the [deployment runbook](docs/runbooks/domain-cutover.md) and [public transparency page](https://backlog.syntaxlab.com.br/en/transparency).
 
 This repository is the multi-tenant SaaS implementation, not the standalone workspace
 backlog/Tasks skill. Its MIT license does not include access to hosted data or credentials.
@@ -17,14 +33,18 @@ the deployed version and code still awaiting a PR.
 
 ## Using the product
 
-- [Open the app](https://backlog.syntaxlab.com.br/entrar): a valid existing session returns to an accessible workspace without another password prompt.
+- [Open the app](https://backlog.syntaxlab.com.br/en/sign-in): a valid existing session returns to an accessible workspace without another password prompt.
 - **Backlog** shows the workspace's tasks by status, with project/owner filters and an activity trail.
 - **Tasks** schedules those same tasks across six weekly columns. Scheduling and deadlines are independent; unscheduled items remain in the backlog.
-- [Integration guide](https://backlog.syntaxlab.com.br/documentacao): public boxed documentation and a contextual version inside the workspace.
+- [Integration guide](https://backlog.syntaxlab.com.br/en/docs): public boxed documentation and a contextual version inside the workspace.
 - [Interactive API reference](https://backlog-api.syntaxlab.com.br/docs) and [OpenAPI JSON](https://backlog-api.syntaxlab.com.br/openapi.json): REST contracts for clients and agents.
 - Remote MCP uses `https://backlog-api.syntaxlab.com.br/mcp`. WebMCP is an optional browser enhancement, not a requirement for the app.
 
 ## Product preview
+
+The website and application support **English and Brazilian Portuguese**, including sign-in,
+onboarding, boards, weekly Tasks and settings. Use the PT/EN switcher to change language.
+See [languages, SEO and Markdown discovery](docs/features/internationalization.md).
 
 Updated on September 6, 2026. The landing capture shows the published hero;
 Backlog and Tasks show the current interface with fictional demo data, not customer records.

@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/provider";
 import { Check, Pin, Plus } from "lucide-react";
 import type { ReactNode } from "react";
 import type { BoardTask } from "@/lib/backlog/board-task";
@@ -72,6 +73,8 @@ export function BacklogRail({
   onPinProject: (slug: string) => void;
   onNewProject: () => void;
 }) {
+  const { t } = useI18n();
+
   const peak = Math.max(1, ...COLUMNS.map((column) => countsByStatus[column.key] ?? 0));
   const visibleProjects = projects
     .map((project) => ({ project, count: countByProject.get(project.id) ?? 0 }))
@@ -80,13 +83,16 @@ export function BacklogRail({
 
   return (
     <>
-      <Panel title="Onde está travado" subtitle="Tarefas não concluídas, por responsável.">
+      <Panel
+        title={t("Onde está travado")}
+        subtitle={t("Tarefas não concluídas, por responsável.")}
+      >
         <div className="flex gap-2">
           {(
             [
-              ["human", "Pessoas", "text-owner-human"],
-              ["agent", "Agentes", "text-owner-agent"],
-              ["free", "Livres", "text-foreground"],
+              ["human", t("Pessoas"), "text-owner-human"],
+              ["agent", t("Agentes"), "text-owner-agent"],
+              ["free", t("Livres"), "text-foreground"],
             ] as const
           ).map(([owner, label, tone]) => (
             <div key={owner} className="flex-1 rounded-panel bg-panel px-3 py-3">
@@ -104,15 +110,15 @@ export function BacklogRail({
       </Panel>
 
       <Panel
-        title="Projetos"
-        subtitle="Tarefas não concluídas por projeto. Clique para filtrar o quadro."
+        title={t("Projetos")}
+        subtitle={t("Tarefas não concluídas por projeto. Clique para filtrar o quadro.")}
         action={
           <button
             type="button"
             onClick={onNewProject}
             className="-mr-1 -mt-1 grid size-8 shrink-0 place-items-center rounded-full text-muted hover:bg-panel hover:text-foreground"
-            aria-label="Criar projeto"
-            title="Criar projeto"
+            aria-label={t("Criar projeto")}
+            title={t("Criar projeto")}
           >
             <Plus aria-hidden="true" className="size-4" />
           </button>
@@ -121,7 +127,7 @@ export function BacklogRail({
         <div className="bl-scroll flex max-h-[270px] flex-col gap-px overflow-auto">
           <ProjectRow
             slug={ALL_PROJECTS}
-            name="Todos os projetos"
+            name={t("Todos os projetos")}
             count={[...countByProject.values()].reduce((sum, n) => sum + n, 0)}
             active={activeProject === ALL_PROJECTS}
             pinned={false}
@@ -145,7 +151,10 @@ export function BacklogRail({
         </div>
       </Panel>
 
-      <Panel title="Distribuição por status" subtitle="Contagem real, incluindo as concluídas.">
+      <Panel
+        title={t("Distribuição por status")}
+        subtitle={t("Contagem real, incluindo as concluídas.")}
+      >
         <div className="mb-3.5 grid grid-cols-1 gap-x-3.5 gap-y-0.5 sm:grid-cols-2">
           {COLUMNS.map((column) => (
             <div key={column.key} className="flex items-center gap-2 py-1 text-[11.5px] text-muted">
@@ -154,7 +163,7 @@ export function BacklogRail({
                 style={{ background: statusDotVar[column.key] }}
                 className="block size-[7px] shrink-0 rounded-full"
               />
-              {column.label}
+              {t(column.label)}
               <b className="ml-auto font-mono text-[10.5px] font-bold text-faint">
                 {countsByStatus[column.key] ?? 0}
               </b>
@@ -186,7 +195,7 @@ export function BacklogRail({
         </div>
 
         <div className="flex gap-2">
-          {["Aberto", "Andam.", "Bloq.", "Concl."].map((label) => (
+          {[t("Aberto"), "Andam.", "Bloq.", "Concl."].map((label) => (
             <span
               key={label}
               className="flex-1 text-center font-mono text-[8.5px] font-semibold uppercase leading-[1.3] tracking-[0.08em] text-faint"
@@ -201,11 +210,13 @@ export function BacklogRail({
 }
 
 export function RecentlyClosedPanel({ recentlyClosed }: { recentlyClosed: BoardTask[] }) {
+  const { t, locale } = useI18n();
+
   return (
-    <Panel title="Fechadas recentemente" subtitle="As últimas que saíram da frente.">
+    <Panel title={t("Fechadas recentemente")} subtitle={t("As últimas que saíram da frente.")}>
       {recentlyClosed.length === 0 ? (
         <p className="grid min-h-16 place-items-center rounded-control border-[1.5px] border-dashed border-line px-2.5 py-4 text-center font-mono text-[10px] font-semibold text-faint">
-          nada fechado ainda
+          {t("nada fechado ainda")}
         </p>
       ) : (
         recentlyClosed.map((task) => (
@@ -218,7 +229,7 @@ export function RecentlyClosedPanel({ recentlyClosed }: { recentlyClosed: BoardT
             </span>
             <span className="flex-1 text-muted">{task.title}</span>
             <span className="mt-[3px] shrink-0 font-mono text-[9.5px] font-bold text-faint">
-              {shortDate(task.updatedAt)}
+              {shortDate(task.updatedAt, locale)}
             </span>
           </div>
         ))
@@ -246,6 +257,8 @@ function ProjectRow({
   onFilter: (slug: string) => void;
   onPin: (slug: string) => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="flex items-center">
       <button
@@ -253,8 +266,12 @@ function ProjectRow({
         disabled={!pinnable}
         onClick={() => onPin(slug)}
         aria-pressed={pinned}
-        title={pinned ? "Remover projeto padrão" : "Abrir este projeto por padrão"}
-        aria-label={pinned ? `Remover ${name} como projeto padrão` : `Abrir ${name} por padrão`}
+        title={pinned ? t("Remover projeto padrão") : t("Abrir este projeto por padrão")}
+        aria-label={
+          pinned
+            ? t("Remover {0} como projeto padrão", { "0": name })
+            : t("Abrir {0} por padrão", { "0": name })
+        }
         className="grid h-7 w-[18px] shrink-0 place-items-center text-faint disabled:opacity-0"
       >
         {pinned ? (

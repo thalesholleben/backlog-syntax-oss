@@ -1,3 +1,4 @@
+import type { Locale } from "@/lib/i18n/routing";
 import type { BoardTask } from "@/lib/backlog/board-task";
 import type { TaskStatus } from "@/lib/domain-types";
 
@@ -57,22 +58,32 @@ export function ageInDays(iso: string, today: Date = startOfToday()): number {
   return Math.max(0, Math.round((today.getTime() - created.getTime()) / MS_DAY));
 }
 
-export function pluralDays(days: number): string {
-  return days === 1 ? "1 dia" : `${days} dias`;
+export function pluralDays(days: number, locale: Locale = "pt-BR"): string {
+  return locale === "en"
+    ? `${days} ${days === 1 ? "day" : "days"}`
+    : days === 1
+      ? "1 dia"
+      : `${days} dias`;
 }
 
 /** dd/mm, que é o formato curto usado nas etiquetas do quadro. */
-export function shortDate(iso: string | null | undefined): string {
+export function shortDate(iso: string | null | undefined, locale: Locale = "pt-BR"): string {
   const [year, month, day] = String(iso ?? "")
     .slice(0, 10)
     .split("-");
-  return year && month && day ? `${day}/${month}` : "sem data";
+  return year && month && day
+    ? locale === "en"
+      ? `${month}/${day}`
+      : `${day}/${month}`
+    : locale === "en"
+      ? "no date"
+      : "sem data";
 }
 
-export function dateTimePt(iso: string): string {
+export function formatDateTime(iso: string, locale: Locale = "pt-BR"): string {
   const value = new Date(iso);
-  if (Number.isNaN(value.getTime())) return shortDate(iso);
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(value);
+  if (Number.isNaN(value.getTime())) return shortDate(iso, locale);
+  return new Intl.DateTimeFormat(locale, { dateStyle: "short", timeStyle: "short" }).format(value);
 }
 
 /** Acima disso a etiqueta do card fica vermelha e a task entra na faixa crítica. */

@@ -45,7 +45,7 @@ Use Docker Desktop for PostgreSQL integration and RLS tests. Never point automat
 - The owner approved one final documentation-only direct update on 2026-09-06. It is a historical exception, not permission for future direct updates.
 - Follow [CONTRIBUTING.md](CONTRIBUTING.md) for the branch/PR procedure. Do not merge a PR or deploy without explicit authorization; a request to open a PR is not permission to merge it.
 - Preserve existing working-tree and staged changes. Do not bundle unrelated edits, discard them, or publish local artifacts just to make the tree clean.
-- Keep contracts in English and visible product copy in Brazilian Portuguese.
+- Keep contracts in English. Product copy supports Brazilian Portuguese and English through `apps/web/lib/i18n`; translate first-party copy, never user-authored workspace content. Preserve both locales when adding UI or routes.
 - Update the relevant ADR, feature doc, contract, or runbook with a behavior change.
 - Do not add a dependency when the platform or an installed dependency already solves the problem.
 - Do not add Redis, billing, file uploads, custom workflows, or production analytics in V1.

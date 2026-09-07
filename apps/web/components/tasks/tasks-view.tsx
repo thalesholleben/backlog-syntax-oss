@@ -1,5 +1,9 @@
 "use client";
+import type { Locale } from "@/lib/i18n/routing";
 
+import type { Translator } from "@/lib/i18n/translate";
+
+import { useI18n } from "@/lib/i18n/provider";
 import {
   DndContext,
   type DragEndEvent,
@@ -40,20 +44,22 @@ import {
 } from "@/lib/tasks/week";
 import { useActiveWorkspace } from "@/lib/use-active-workspace";
 
-function weekRangeLabel(monday: Date): string {
+function weekRangeLabel(monday: Date, locale: Locale): string {
   const sunday = addDays(monday, 6);
-  const formatter = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" });
-  return `${formatter.format(monday)} a ${formatter.format(sunday)}`;
+  const formatter = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" });
+  return `${formatter.format(monday)} ${locale === "en" ? "to" : "a"} ${formatter.format(sunday)}`;
 }
 
-function dueLabel(date: string): string {
+function dueLabel(date: string, t: Translator): string {
   const days = daysFromToday(date);
-  if (days < 0) return `venceu há ${Math.abs(days)}d`;
-  if (days === 0) return "vence hoje";
-  return `vence em ${days}d`;
+  if (days < 0) return t("venceu há {0}d", { "0": Math.abs(days) });
+  if (days === 0) return t("vence hoje");
+  return t("vence em {0}d", { "0": days });
 }
 
 export function TasksView({ workspaceSlug }: { workspaceSlug: string }) {
+  const { t, locale } = useI18n();
+
   const { summary, workspacesQuery, contextQuery } = useActiveWorkspace(workspaceSlug);
   const workspaceId = summary?.id ?? "";
   const tasksQuery = useTasks(workspaceId);
@@ -71,7 +77,7 @@ export function TasksView({ workspaceSlug }: { workspaceSlug: string }) {
     }),
   );
 
-  const columns = useMemo(() => weekColumns(monday), [monday]);
+  const columns = useMemo(() => weekColumns(monday, locale), [monday, locale]);
   const tasks: BoardTask[] = useMemo(() => tasksQuery.data?.data ?? [], [tasksQuery.data]);
   const projects = useMemo(() => contextQuery.data?.projects ?? [], [contextQuery.data]);
   const detailsTask = tasks.find((task) => task.id === detailsId) ?? null;
@@ -151,8 +157,10 @@ export function TasksView({ workspaceSlug }: { workspaceSlug: string }) {
   if (workspacesQuery.isError || contextQuery.isError || tasksQuery.isError) {
     return (
       <div className="mx-auto max-w-md px-4 py-24 text-center">
-        <p className="font-display text-xl font-bold">Não foi possível carregar a agenda</p>
-        <p className="mt-2 text-sm text-muted">Verifique a conexão com a API e tente de novo.</p>
+        <p className="font-display text-xl font-bold">{t("Não foi possível carregar a agenda")}</p>
+        <p className="mt-2 text-sm text-muted">
+          {t("Verifique a conexão com a API e tente de novo.")}
+        </p>
         <Button
           className="mt-5"
           size="sm"
@@ -163,7 +171,7 @@ export function TasksView({ workspaceSlug }: { workspaceSlug: string }) {
             void tasksQuery.refetch();
           }}
         >
-          Tentar novamente
+          {t("Tentar novamente")}
         </Button>
       </div>
     );
@@ -185,16 +193,16 @@ export function TasksView({ workspaceSlug }: { workspaceSlug: string }) {
               Tasks<span className="text-faint">.</span>
             </h1>
             <p className="mt-[7px] font-mono text-[8.5px] font-bold uppercase tracking-[0.18em] text-faint">
-              {summary.name} · {weekRangeLabel(monday)}
+              {summary.name} · {weekRangeLabel(monday, locale)}
             </p>
           </div>
         </div>
 
         <dl className="flex items-center max-lg:order-3 max-lg:w-full max-lg:justify-between max-sm:grid max-sm:grid-cols-2 max-sm:gap-y-2">
-          <TaskKpi label="restam" value={kpis.left} />
-          <TaskKpi label="feitas" value={kpis.done} tone="text-status-done-ink" />
-          <TaskKpi label="vencidas" value={kpis.overdue} tone="text-stale-ink" />
-          <TaskKpi label="até domingo" value={kpis.due} tone="text-status-open-ink" />
+          <TaskKpi label={t("restam")} value={kpis.left} />
+          <TaskKpi label={t("feitas")} value={kpis.done} tone="text-status-done-ink" />
+          <TaskKpi label={t("vencidas")} value={kpis.overdue} tone="text-stale-ink" />
+          <TaskKpi label={t("até domingo")} value={kpis.due} tone="text-status-open-ink" />
         </dl>
 
         <div className="ml-auto flex flex-wrap items-center justify-end gap-2 max-lg:w-full">
@@ -202,7 +210,7 @@ export function TasksView({ workspaceSlug }: { workspaceSlug: string }) {
             <button
               type="button"
               onClick={() => setMonday((current) => addDays(current, -7))}
-              aria-label="Semana anterior"
+              aria-label={t("Semana anterior")}
               className="grid size-8 place-items-center rounded-full text-muted hover:bg-panel hover:text-foreground"
             >
               <ChevronLeft aria-hidden="true" className="size-4" />
@@ -212,12 +220,12 @@ export function TasksView({ workspaceSlug }: { workspaceSlug: string }) {
               onClick={() => setMonday(startOfWeek(new Date()))}
               className="min-h-8 rounded-full px-3 text-[11px] font-bold text-muted hover:bg-panel hover:text-foreground"
             >
-              Hoje
+              {t("Hoje")}
             </button>
             <button
               type="button"
               onClick={() => setMonday((current) => addDays(current, 7))}
-              aria-label="Próxima semana"
+              aria-label={t("Próxima semana")}
               className="grid size-8 place-items-center rounded-full text-muted hover:bg-panel hover:text-foreground"
             >
               <ChevronRight aria-hidden="true" className="size-4" />
@@ -230,7 +238,7 @@ export function TasksView({ workspaceSlug }: { workspaceSlug: string }) {
             className="inline-flex min-h-[38px] items-center gap-2 rounded-full bg-contrast px-4 text-[12.5px] font-bold text-contrast-foreground hover:bg-contrast-hover"
           >
             <Plus aria-hidden="true" className="size-4 opacity-60" />
-            Nova tarefa
+            {t("Nova tarefa")}
           </button>
         </div>
       </header>
@@ -245,7 +253,7 @@ export function TasksView({ workspaceSlug }: { workspaceSlug: string }) {
         onDragEnd={handleDragEnd}
         onDragCancel={() => setDragging(null)}
       >
-        <section aria-label="Agenda semanal" className="rounded-card bg-ink p-3 shadow-deck">
+        <section aria-label={t("Agenda semanal")} className="rounded-card bg-ink p-3 shadow-deck">
           <div className="bl-scroll grid auto-cols-[minmax(260px,84vw)] grid-flow-col items-start gap-2.5 overflow-x-auto pb-2 md:auto-cols-auto md:grid-flow-row md:grid-cols-3 md:overflow-visible md:pb-0 xl:grid-cols-6">
             {columns.map((column) => (
               <WeekDayColumn
@@ -288,7 +296,7 @@ export function TasksView({ workspaceSlug }: { workspaceSlug: string }) {
                 {dragging ? (
                   <TaskGhost
                     task={dragging}
-                    projectName={projectById.get(dragging.projectId) ?? "sem projeto"}
+                    projectName={projectById.get(dragging.projectId) ?? t("sem projeto")}
                   />
                 ) : null}
               </DragOverlay>,
@@ -298,8 +306,8 @@ export function TasksView({ workspaceSlug }: { workspaceSlug: string }) {
       </DndContext>
 
       <footer className="mt-3 flex flex-wrap justify-between gap-2 px-2.5 font-mono text-[10px] leading-6 text-faint">
-        <p>Arraste entre os dias ou use o seletor no card. Toda mudança grava na hora.</p>
-        <p>Dia na agenda e prazo são independentes.</p>
+        <p>{t("Arraste entre os dias ou use o seletor no card. Toda mudança grava na hora.")}</p>
+        <p>{t("Dia na agenda e prazo são independentes.")}</p>
       </footer>
 
       <NewTaskDialog
@@ -355,14 +363,16 @@ function WeekDayColumn({
   onOpen: (task: BoardTask) => void;
   onNew: () => void;
 }) {
+  const { t, locale } = useI18n();
+
   const { isOver, setNodeRef } = useDroppable({
     id: `day:${column.key}`,
     data: { scheduleDate: column.scheduleDate },
   });
   const dateLabel =
     column.dates.length === 1
-      ? shortDay(column.scheduleDate)
-      : `${shortDay(column.dates[0] ?? "")}–${shortDay(column.dates[1] ?? "")}`;
+      ? shortDay(column.scheduleDate, locale)
+      : `${shortDay(column.dates[0] ?? "", locale)}–${shortDay(column.dates[1] ?? "", locale)}`;
 
   return (
     <section
@@ -379,7 +389,7 @@ function WeekDayColumn({
         </h2>
         {isToday ? (
           <span className="rounded-full bg-accent-foreground px-1.5 py-0.5 font-mono text-[7px] font-bold uppercase text-accent">
-            hoje
+            {t("hoje")}
           </span>
         ) : null}
         <span className="ml-auto font-mono text-[9px] font-bold opacity-70">{dateLabel}</span>
@@ -393,7 +403,7 @@ function WeekDayColumn({
           <AgendaTaskCard
             key={task.id}
             task={task}
-            projectName={projectById.get(task.projectId) ?? "sem projeto"}
+            projectName={projectById.get(task.projectId) ?? t("sem projeto")}
             columns={columns}
             onSchedule={onSchedule}
             onToggleDone={onToggleDone}
@@ -406,7 +416,7 @@ function WeekDayColumn({
             onClick={onNew}
             className="flex min-h-24 w-full items-center justify-center rounded-control border border-dashed border-ink-line px-3 text-center font-mono text-[9px] font-bold uppercase tracking-[0.08em] text-ink-faint hover:border-line-strong hover:text-ink-muted"
           >
-            + agendar tarefa
+            {t("+ agendar tarefa")}
           </button>
         ) : null}
       </div>
@@ -429,6 +439,8 @@ function AgendaTaskCard({
   onToggleDone: (task: BoardTask) => void;
   onOpen: (task: BoardTask) => void;
 }) {
+  const { t, locale } = useI18n();
+
   const { attributes, isDragging, listeners, setNodeRef } = useDraggable({
     id: `task:${task.id}`,
     data: { taskId: task.id },
@@ -446,7 +458,10 @@ function AgendaTaskCard({
           type="checkbox"
           checked={task.status === "done"}
           onChange={() => onToggleDone(task)}
-          aria-label={`Marcar ${task.title} como ${task.status === "done" ? "não concluída" : "concluída"}`}
+          aria-label={t("Marcar {0} como {1}", {
+            "0": task.title,
+            "1": task.status === "done" ? t("não concluída") : t("concluída"),
+          })}
           className="size-4 shrink-0 accent-[var(--accent)]"
         />
         <OwnerAvatar owner={ownerOf(task)} />
@@ -477,10 +492,10 @@ function AgendaTaskCard({
           onChange={(event) => onSchedule(task, event.target.value || null)}
           className="min-w-0 flex-1 rounded-full border border-ink-line bg-ink-3 px-2 py-1.5 font-mono text-[8px] font-bold text-ink-muted"
         >
-          <option value="">Sem dia</option>
+          <option value="">{t("Sem dia")}</option>
           {columns.map((column) => (
             <option key={column.key} value={column.scheduleDate}>
-              {column.shortLabel} · {shortDay(column.scheduleDate)}
+              {column.shortLabel} · {shortDay(column.scheduleDate, locale)}
             </option>
           ))}
         </select>
@@ -488,7 +503,7 @@ function AgendaTaskCard({
           <span
             className={`whitespace-nowrap rounded-full px-2 py-1.5 font-mono text-[8px] font-bold ${overdue ? "bg-stale-bg text-stale-ink" : "bg-ink-3 text-ink-faint"}`}
           >
-            {dueLabel(task.dueDate)}
+            {dueLabel(task.dueDate, t)}
           </span>
         ) : null}
       </div>
@@ -509,6 +524,8 @@ function UnscheduledPanel({
   onSchedule: (task: BoardTask, date: string | null) => void;
   onOpen: (task: BoardTask) => void;
 }) {
+  const { t, locale } = useI18n();
+
   const { isOver, setNodeRef } = useDroppable({ id: "day:none", data: { scheduleDate: null } });
   return (
     <aside
@@ -517,13 +534,13 @@ function UnscheduledPanel({
     >
       <div className="flex items-center gap-2">
         <CalendarDays aria-hidden="true" className="size-4 text-faint" />
-        <h2 className="text-sm font-extrabold">Para agendar</h2>
+        <h2 className="text-sm font-extrabold">{t("Para agendar")}</h2>
         <span className="ml-auto rounded-full bg-panel px-2 py-1 font-mono text-[9px] font-bold text-muted">
           {tasks.length}
         </span>
       </div>
       <p className="mt-1 text-[11px] leading-5 text-muted">
-        Sem dia nesta semana. Inclui tarefas planejadas para outras semanas.
+        {t("Sem dia nesta semana. Inclui tarefas planejadas para outras semanas.")}
       </p>
       <div className="mt-3 max-h-[360px] space-y-2 overflow-y-auto">
         {tasks.map((task) => (
@@ -537,7 +554,7 @@ function UnscheduledPanel({
             </button>
             <div className="mt-2 flex items-center gap-2">
               <span className="min-w-0 flex-1 truncate font-mono text-[8px] font-bold uppercase text-faint">
-                {projectById.get(task.projectId) ?? "sem projeto"}
+                {projectById.get(task.projectId) ?? t("sem projeto")}
               </span>
               <select
                 aria-label={`Agendar ${task.title}`}
@@ -545,10 +562,10 @@ function UnscheduledPanel({
                 onChange={(event) => onSchedule(task, event.target.value || null)}
                 className="rounded-full border border-line bg-surface px-2 py-1.5 font-mono text-[8px] font-bold text-muted"
               >
-                <option value="">Agendar…</option>
+                <option value="">{t("Agendar…")}</option>
                 {columns.map((column) => (
                   <option key={column.key} value={column.scheduleDate}>
-                    {column.shortLabel} · {shortDay(column.scheduleDate)}
+                    {column.shortLabel} · {shortDay(column.scheduleDate, locale)}
                   </option>
                 ))}
               </select>
@@ -557,7 +574,7 @@ function UnscheduledPanel({
         ))}
         {tasks.length === 0 ? (
           <p className="rounded-control border border-dashed border-line p-4 text-center text-xs text-muted">
-            Tudo distribuído nesta semana.
+            {t("Tudo distribuído nesta semana.")}
           </p>
         ) : null}
       </div>
@@ -572,6 +589,8 @@ function DeadlinePanel({
   tasks: BoardTask[];
   projectById: Map<string, string>;
 }) {
+  const { t } = useI18n();
+
   const openWithDue = tasks
     .filter((task) => task.status !== "done" && task.dueDate)
     .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""));
@@ -582,12 +601,12 @@ function DeadlinePanel({
       "text-stale-ink",
     ],
     [
-      "Hoje",
+      t("Hoje"),
       openWithDue.filter((task) => daysFromToday(task.dueDate ?? "") === 0).length,
       "text-warn",
     ],
     [
-      "Próximos 7 dias",
+      t("Próximos 7 dias"),
       openWithDue.filter((task) => {
         const days = daysFromToday(task.dueDate ?? "");
         return days > 0 && days <= 7;
@@ -595,7 +614,7 @@ function DeadlinePanel({
       "text-status-open-ink",
     ],
     [
-      "Depois disso",
+      t("Depois disso"),
       openWithDue.filter((task) => daysFromToday(task.dueDate ?? "") > 7).length,
       "text-status-done-ink",
     ],
@@ -603,9 +622,11 @@ function DeadlinePanel({
 
   return (
     <section className="rounded-card bg-surface p-5 shadow-card">
-      <h2 className="text-base font-extrabold tracking-[-0.02em]">Prazos: o que vence quando</h2>
+      <h2 className="text-base font-extrabold tracking-[-0.02em]">
+        {t("Prazos: o que vence quando")}
+      </h2>
       <p className="mt-1 text-[11px] leading-5 text-muted">
-        Só tarefas abertas com prazo. A agenda continua independente desta data.
+        {t("Só tarefas abertas com prazo. A agenda continua independente desta data.")}
       </p>
       <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
         {buckets.map(([label, value, tone]) => (
@@ -619,7 +640,7 @@ function DeadlinePanel({
       </div>
       <div className="mt-4 border-t border-line-soft pt-3">
         <p className="font-mono text-[8.5px] font-bold uppercase tracking-[0.1em] text-faint">
-          Vence primeiro
+          {t("Vence primeiro")}
         </p>
         <ul className="mt-2 grid gap-2 sm:grid-cols-2">
           {openWithDue.slice(0, 6).map((task) => (
@@ -630,7 +651,7 @@ function DeadlinePanel({
               <span
                 className={`shrink-0 font-mono text-[9px] font-bold ${daysFromToday(task.dueDate ?? "") < 0 ? "text-stale-ink" : "text-muted"}`}
               >
-                {dueLabel(task.dueDate ?? "")}
+                {dueLabel(task.dueDate ?? "", t)}
               </span>
               <span className="min-w-0 truncate text-[11px] font-semibold">{task.title}</span>
               <span className="ml-auto max-w-20 truncate font-mono text-[7.5px] font-bold uppercase text-faint">
@@ -639,7 +660,7 @@ function DeadlinePanel({
             </li>
           ))}
           {openWithDue.length === 0 ? (
-            <li className="text-xs text-muted">Nenhuma tarefa aberta tem prazo.</li>
+            <li className="text-xs text-muted">{t("Nenhuma tarefa aberta tem prazo.")}</li>
           ) : null}
         </ul>
       </div>

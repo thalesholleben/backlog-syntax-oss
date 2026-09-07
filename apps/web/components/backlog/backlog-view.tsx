@@ -1,5 +1,8 @@
 "use client";
 
+import type { Translator } from "@/lib/i18n/translate";
+
+import { useI18n } from "@/lib/i18n/provider";
 import {
   DndContext,
   type DragEndEvent,
@@ -46,12 +49,12 @@ type OwnerFilter = Owner | "todos";
 
 const PIN_KEY = "bl-projeto-fixado";
 
-const OWNER_CUT: Record<OwnerFilter, string> = {
+const OWNER_CUT = (t: Translator): Record<OwnerFilter, string> => ({
   todos: "",
-  human: "de pessoas",
-  agent: "de agentes",
-  free: "sem responsável",
-};
+  human: t("de pessoas"),
+  agent: t("de agentes"),
+  free: t("sem responsável"),
+});
 
 export function BacklogView({
   workspaceSlug,
@@ -60,6 +63,8 @@ export function BacklogView({
   workspaceSlug: string;
   projectSlug?: string;
 }) {
+  const { t } = useI18n();
+
   const { summary, workspacesQuery, contextQuery } = useActiveWorkspace(workspaceSlug);
   const workspaceId = summary?.id ?? "";
   const tasksQuery = useTasks(workspaceId);
@@ -193,11 +198,13 @@ export function BacklogView({
   /* Recorte em texto, usado na mensagem de coluna vazia: sem ele o quadro diz
      "nada aqui" mesmo quando existem tarefas escondidas por um filtro. */
   const cut = [
-    OWNER_CUT[ownerFilter],
+    OWNER_CUT(t)[ownerFilter],
     projectFilter === ALL_PROJECTS
       ? ""
-      : `em ${projects.find((project) => project.slug === projectFilter)?.name ?? projectFilter}`,
-    search.trim() ? `com “${search.trim()}”` : "",
+      : t("em {0}", {
+          "0": projects.find((project) => project.slug === projectFilter)?.name ?? projectFilter,
+        }),
+    search.trim() ? t("com “{0}”", { "0": search.trim() }) : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -252,8 +259,10 @@ export function BacklogView({
   if (workspacesQuery.isError || contextQuery.isError || tasksQuery.isError) {
     return (
       <div className="mx-auto max-w-md px-4 py-24 text-center">
-        <p className="font-display text-xl font-bold">Não foi possível carregar o quadro</p>
-        <p className="mt-2 text-sm text-muted">Verifique a conexão com a API e tente de novo.</p>
+        <p className="font-display text-xl font-bold">{t("Não foi possível carregar o quadro")}</p>
+        <p className="mt-2 text-sm text-muted">
+          {t("Verifique a conexão com a API e tente de novo.")}
+        </p>
         <Button
           size="sm"
           className="mt-5"
@@ -264,7 +273,7 @@ export function BacklogView({
             void tasksQuery.refetch();
           }}
         >
-          Tentar novamente
+          {t("Tentar novamente")}
         </Button>
       </div>
     );
@@ -304,26 +313,38 @@ export function BacklogView({
         onDragEnd={handleDragEnd}
         onDragCancel={() => setDragging(null)}
         accessibility={{
+          screenReaderInstructions: {
+            draggable: t(
+              "Pressione espaço para pegar uma tarefa, use as setas para mover e espaço para soltar. Escape cancela.",
+            ),
+          },
           announcements: {
             onDragStart: ({ active }) =>
-              `Pegou a tarefa ${allTasks.find((t) => t.id === active.data.current?.taskId)?.title ?? ""}.`,
+              t("Pegou a tarefa {0}.", {
+                "0": allTasks.find((t) => t.id === active.data.current?.taskId)?.title ?? "",
+              }),
             onDragOver: ({ over }) =>
               over
-                ? `Sobre a coluna ${statusLabel[(over.data.current?.status as TaskStatus) ?? "open"]}.`
+                ? t("Sobre a coluna {0}.", {
+                    "0": t(statusLabel[(over.data.current?.status as TaskStatus) ?? "open"]),
+                  })
                 : "",
             onDragEnd: ({ active, over }) => {
               const title = allTasks.find((t) => t.id === active.data.current?.taskId)?.title ?? "";
               const status = over?.data.current?.status as TaskStatus | undefined;
               return status
-                ? `Tarefa ${title} movida para ${statusLabel[status]}.`
-                : `Tarefa ${title} solta sem mudar de coluna.`;
+                ? t("Tarefa {0} movida para {1}.", { "0": title, "1": t(statusLabel[status]) })
+                : t("Tarefa {0} solta sem mudar de coluna.", { "0": title });
             },
-            onDragCancel: () => "Movimento cancelado.",
+            onDragCancel: () => t("Movimento cancelado."),
           },
         }}
       >
         <div className="mb-3 grid items-start gap-3 xl:grid-cols-[minmax(0,1fr)_290px]">
-          <section aria-label="Quadro do backlog" className="rounded-card bg-ink p-3 shadow-deck">
+          <section
+            aria-label={t("Quadro do backlog")}
+            className="rounded-card bg-ink p-3 shadow-deck"
+          >
             <div className="grid grid-cols-1 items-start gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
               {COLUMNS.map((column) => {
                 const tasks = byStatus[column.key];
@@ -332,7 +353,7 @@ export function BacklogView({
                     key={column.key}
                     column={{
                       ...column,
-                      empty: cut ? `nada ${cut} aqui` : column.empty,
+                      empty: cut ? t("nada {0} aqui", { "0": cut }) : column.empty,
                     }}
                     count={tasks.length}
                     empty={tasks.length === 0}
@@ -343,7 +364,7 @@ export function BacklogView({
                         task={task}
                         owner={ownerOf(task)}
                         days={daysById.get(task.id) ?? 0}
-                        projectName={projectById.get(task.projectId)?.name ?? "sem projeto"}
+                        projectName={projectById.get(task.projectId)?.name ?? t("sem projeto")}
                         workspaceId={workspaceId}
                         open={openCard === task.id}
                         onToggle={() => setOpenCard(openCard === task.id ? null : task.id)}
@@ -396,7 +417,7 @@ export function BacklogView({
                   <CardGhost
                     task={dragging}
                     owner={ownerOf(dragging)}
-                    projectName={projectById.get(dragging.projectId)?.name ?? "sem projeto"}
+                    projectName={projectById.get(dragging.projectId)?.name ?? t("sem projeto")}
                   />
                 ) : null}
               </DragOverlay>,
@@ -414,12 +435,14 @@ export function BacklogView({
 
       <footer className="mt-3.5 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-2.5 font-mono text-[10.5px] leading-[1.7] tracking-[0.02em] text-faint">
         <p>
-          Clique no card para abrir, arraste para mudar de coluna. Toda mudança grava na hora, com
-          versão e trilha de eventos.
+          {t(
+            "Clique no card para abrir, arraste para mudar de coluna. Toda mudança grava na hora, com versão e trilha de eventos.",
+          )}
         </p>
         <p>
-          O mesmo quadro pela <b className="font-bold text-muted">API REST</b> e pelo{" "}
-          <b className="font-bold text-muted">MCP</b>, para pessoa e agente verem o mesmo estado.
+          {t("O mesmo quadro pela")} <b className="font-bold text-muted">{t("API REST")}</b>{" "}
+          {t("e pelo")} <b className="font-bold text-muted">MCP</b>
+          {t(", para pessoa e agente verem o mesmo estado.")}
         </p>
       </footer>
 

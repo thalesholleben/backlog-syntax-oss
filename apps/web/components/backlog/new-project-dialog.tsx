@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/provider";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import {
@@ -11,7 +12,8 @@ import {
   submitButton,
 } from "@/components/backlog/backlog-dialog";
 import { useToast } from "@/components/ui/toast";
-import { ApiError, newIdempotencyKey } from "@/lib/api/client";
+import { newIdempotencyKey } from "@/lib/api/client";
+import { errorMessage } from "@/lib/i18n/errors";
 import { createProject } from "@/lib/api/workspaces";
 
 /** Mesma regra do contrato: minúsculas, números e hífen. */
@@ -34,6 +36,8 @@ export function NewProjectDialog({
   onClose: () => void;
   workspaceId: string;
 }) {
+  const { t } = useI18n();
+
   const queryClient = useQueryClient();
   const { notify } = useToast();
   const [name, setName] = useState("");
@@ -48,7 +52,7 @@ export function NewProjectDialog({
       close();
     },
     onError: (error: unknown) => {
-      notify("error", error instanceof ApiError ? error.message : "Não foi possível criar agora.");
+      notify("error", errorMessage(error, t));
     },
   });
 
@@ -65,9 +69,11 @@ export function NewProjectDialog({
     <BacklogDialog
       open={open}
       onClose={close}
-      eyebrow="Backlog · projetos"
-      title="Criar um projeto"
-      intro="Projeto é o recorte que a lateral usa para filtrar o quadro. O identificador entra na URL e nas chamadas do agente, então ele vale mais curto do que bonito."
+      eyebrow={t("Backlog · projetos")}
+      title={t("Criar um projeto")}
+      intro={t(
+        "Projeto é o recorte que a lateral usa para filtrar o quadro. O identificador entra na URL e nas chamadas do agente, então ele vale mais curto do que bonito.",
+      )}
     >
       <form
         onSubmit={(event) => {
@@ -78,7 +84,7 @@ export function NewProjectDialog({
       >
         <div className="flex flex-col gap-[7px]">
           <label htmlFor="np-nome" className={fieldLabel}>
-            Nome
+            {t("Nome")}
           </label>
           <input
             id="np-nome"
@@ -87,14 +93,14 @@ export function NewProjectDialog({
             autoComplete="off"
             value={name}
             onChange={(event) => setName(event.target.value)}
-            placeholder="Ex.: Cliente Acme"
+            placeholder={t("Ex.: Cliente Acme")}
             className={fieldControl}
           />
         </div>
 
         <div className="mt-[18px] flex flex-col gap-[7px]">
           <label htmlFor="np-slug" className={fieldLabel}>
-            Identificador
+            {t("Identificador")}
           </label>
           <input
             id="np-slug"
@@ -106,20 +112,22 @@ export function NewProjectDialog({
               setSlugTouched(true);
               setSlug(toSlug(event.target.value));
             }}
-            placeholder="cliente-acme"
+            placeholder={t("cliente-acme")}
             className={`${fieldControl} font-mono`}
           />
           <p className="text-[10.5px] leading-[1.45] text-faint">
-            Minúsculas, números e hífen. Preenchido a partir do nome enquanto você não editar.
+            {t(
+              "Minúsculas, números e hífen. Preenchido a partir do nome enquanto você não editar.",
+            )}
           </p>
         </div>
 
         <div className={dialogActions}>
           <button type="button" onClick={close} className={cancelButton}>
-            Cancelar
+            {t("Cancelar")}
           </button>
           <button type="submit" disabled={create.isPending} className={submitButton}>
-            {create.isPending ? "Criando…" : "Criar projeto"}
+            {create.isPending ? "Criando…" : t("Criar projeto")}
           </button>
         </div>
       </form>

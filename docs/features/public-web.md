@@ -6,7 +6,7 @@ The public shell presents the hosted product, explains its current limits and ex
 
 ## Routes
 
-All public routes live under the `app/(marketing)` route group, which wraps them with
+All public routes live under the `app/[locale]/(marketing)` route group, which wraps them with
 `SiteHeader`/`SiteFooter`. The group segment does not appear in the URL.
 
 | Route | Indexing | Purpose |
@@ -24,6 +24,10 @@ All public routes live under the `app/(marketing)` route group, which wraps them
 Private auth, onboarding and app routes are documented in
 [`docs/features/app-web.md`](./app-web.md).
 
+Every public page also has an English URL under `/en`. See
+[internationalization and discovery](internationalization.md) for the route mapping, reciprocal
+hreflang, localized social cards, Content Signals and public-only Markdown negotiation.
+
 ## Invariants
 
 - Content is rendered on the server and is visible without client JavaScript. The scroll reveal
@@ -37,7 +41,7 @@ Private auth, onboarding and app routes are documented in
   publisher, while Thales Gomes remains the author/creator. The landing page publishes
   `Organization`, `WebSite`, `SoftwareApplication` and `FAQPage` structured data; public
   documentation publishes `TechArticle` and breadcrumb data.
-- Public pages share a 1200 × 630 Open Graph image with exact title, Syntax Lab signature and
+- Public pages use a language-specific 1200 × 630 Open Graph image with title, Syntax Lab signature and
   production domain. Its visual background comes from GPT Image 2; the reproducible HTML layer
   owns typography and brand text. Twitter uses `summary_large_image`.
 - Above-the-fold landing content is immediately visible. Scroll reveal is limited to later

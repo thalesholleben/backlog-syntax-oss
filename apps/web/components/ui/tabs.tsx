@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/provider";
 import { useEffect, useRef } from "react";
 import { cn } from "@/lib/cn";
 
@@ -19,6 +20,8 @@ export function Tabs({
   onChange: (value: string) => void;
   className?: string;
 }) {
+  const { t } = useI18n();
+
   const refs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   useEffect(() => {
@@ -36,7 +39,7 @@ export function Tabs({
   return (
     <div
       role="tablist"
-      aria-label="Estados do quadro"
+      aria-label={t("Estados do quadro")}
       className={cn(
         "bl-scroll flex snap-x gap-1 overflow-x-auto scroll-smooth rounded-full border border-line bg-surface p-1",
         className,

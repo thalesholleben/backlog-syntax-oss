@@ -1,3 +1,4 @@
+import type { Locale } from "@/lib/i18n/routing";
 import type { TaskPriority, TaskStatus } from "./domain-types";
 
 export const TASK_STATUSES: readonly TaskStatus[] = ["open", "in_progress", "blocked", "done"];
@@ -24,11 +25,11 @@ export const priorityLabel: Record<TaskPriority, string> = {
 };
 
 /** Relative aging label from an ISO timestamp, coarse on purpose for a slim card. */
-export function relativeAge(iso: string, now: Date = new Date()): string {
+export function relativeAge(iso: string, now: Date = new Date(), locale: Locale = "pt-BR"): string {
   const then = new Date(iso).getTime();
   const diffMs = Math.max(0, now.getTime() - then);
   const minutes = Math.floor(diffMs / 60_000);
-  if (minutes < 1) return "agora";
+  if (minutes < 1) return locale === "en" ? "now" : "agora";
   if (minutes < 60) return `${minutes}min`;
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}h`;

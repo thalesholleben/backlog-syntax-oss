@@ -1,11 +1,14 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/provider";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { env } from "@/lib/env";
 
 export function GoogleButton() {
+  const { t, href } = useI18n();
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,13 +20,13 @@ export function GoogleButton() {
     try {
       const result = await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/aceitar-termos",
-        newUserCallbackURL: "/aceitar-termos",
-        errorCallbackURL: "/entrar?social=erro",
+        callbackURL: href("/aceitar-termos"),
+        newUserCallbackURL: href("/aceitar-termos"),
+        errorCallbackURL: href("/entrar?social=erro"),
       });
-      if (result.error) setError("Não foi possível iniciar o login com Google.");
+      if (result.error) setError(t("Não foi possível iniciar o login com Google."));
     } catch {
-      setError("Não foi possível iniciar o login com Google.");
+      setError(t("Não foi possível iniciar o login com Google."));
     } finally {
       setIsLoading(false);
     }
@@ -38,7 +41,7 @@ export function GoogleButton() {
         isLoading={isLoading}
         onClick={signInWithGoogle}
       >
-        Continuar com Google
+        {t("Continuar com Google")}
       </Button>
       {error ? (
         <p role="alert" className="text-center text-sm font-semibold text-danger">

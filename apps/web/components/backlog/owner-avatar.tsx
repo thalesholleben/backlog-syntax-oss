@@ -1,3 +1,6 @@
+"use client";
+
+import { useI18n } from "@/lib/i18n/provider";
 import { OWNER_INITIAL, OWNER_LABEL, type Owner } from "@/lib/backlog/view-model";
 import { cn } from "@/lib/cn";
 
@@ -9,16 +12,18 @@ const gradients: Record<Owner, string> = {
 
 /** Disco com a inicial de quem carrega a tarefa. Uma letra, como no quadro de origem. */
 export function OwnerAvatar({ owner, className }: { owner: Owner; className?: string }) {
+  const { t } = useI18n();
+
   return (
     <span
-      title={OWNER_LABEL[owner]}
+      title={t(OWNER_LABEL[owner])}
       className={cn(
         "grid shrink-0 place-items-center rounded-full font-mono font-extrabold leading-none",
         gradients[owner],
         className ?? "size-[17px] text-[8px]",
       )}
     >
-      <span className="sr-only">{OWNER_LABEL[owner]}</span>
+      <span className="sr-only">{t(OWNER_LABEL[owner])}</span>
       <span aria-hidden="true">{OWNER_INITIAL[owner]}</span>
     </span>
   );

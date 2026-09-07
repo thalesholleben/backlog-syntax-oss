@@ -1,16 +1,19 @@
 "use client";
 
+import type { Translator } from "@/lib/i18n/translate";
+
+import { useI18n } from "@/lib/i18n/provider";
 import { Moon, Plus, Search, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Owner } from "@/lib/backlog/view-model";
 
 type OwnerFilter = Owner | "todos";
 
-const FILTERS: { key: OwnerFilter; label: string; dot: string }[] = [
-  { key: "todos", label: "Todos", dot: "bg-faint" },
-  { key: "human", label: "Pessoas", dot: "bg-owner-human" },
-  { key: "agent", label: "Agentes", dot: "bg-owner-agent" },
-  { key: "free", label: "Livres", dot: "bg-owner-free" },
+const FILTERS = (t: Translator): { key: OwnerFilter; label: string; dot: string }[] => [
+  { key: "todos", label: t("Todos"), dot: "bg-faint" },
+  { key: "human", label: t("Pessoas"), dot: "bg-owner-human" },
+  { key: "agent", label: t("Agentes"), dot: "bg-owner-agent" },
+  { key: "free", label: t("Livres"), dot: "bg-owner-free" },
 ];
 
 export function BacklogHero({
@@ -32,6 +35,8 @@ export function BacklogHero({
   onSearch: (value: string) => void;
   onNewTask: () => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <header className="mb-3 flex flex-wrap items-center gap-x-6 gap-y-3.5 rounded-card bg-surface px-[18px] py-3.5 shadow-card">
       <div className="flex shrink-0 items-center gap-3">
@@ -54,18 +59,18 @@ export function BacklogHero({
       </div>
 
       <dl className="flex shrink-0 items-center max-lg:order-3 max-lg:w-full max-lg:justify-between max-sm:grid max-sm:grid-cols-2 max-sm:gap-y-2">
-        <Kpi label="em aberto" value={kpis.open} />
-        <Kpi label="Pessoas" value={kpis.human} tone="text-owner-human" />
-        <Kpi label="Agentes" value={kpis.agent} tone="text-owner-agent" />
-        <Kpi label="concluídas" value={kpis.done} tone="text-status-done-ink" />
+        <Kpi label={t("em aberto")} value={kpis.open} />
+        <Kpi label={t("Pessoas")} value={kpis.human} tone="text-owner-human" />
+        <Kpi label={t("Agentes")} value={kpis.agent} tone="text-owner-agent" />
+        <Kpi label={t("concluídas")} value={kpis.done} tone="text-status-done-ink" />
       </dl>
 
       <div className="flex flex-wrap items-center justify-end gap-2 lg:ml-auto max-lg:w-full">
         <fieldset
-          aria-label="Filtrar o quadro por responsável"
+          aria-label={t("Filtrar o quadro por responsável")}
           className="inline-flex items-center gap-0.5 rounded-full border border-line bg-surface p-[3px] max-sm:w-full"
         >
-          {FILTERS.map((filter) => {
+          {FILTERS(t).map((filter) => {
             const active = ownerFilter === filter.key;
             return (
               <button
@@ -102,8 +107,8 @@ export function BacklogHero({
             type="search"
             value={search}
             onChange={(event) => onSearch(event.target.value)}
-            placeholder="buscar no backlog"
-            aria-label="Buscar por título, descrição ou motivo do bloqueio"
+            placeholder={t("buscar no backlog")}
+            aria-label={t("Buscar por título, descrição ou motivo do bloqueio")}
             className="w-[150px] border-0 bg-transparent text-xs text-foreground outline-none placeholder:text-faint max-sm:w-full max-md:w-[110px]"
           />
         </div>
@@ -114,7 +119,7 @@ export function BacklogHero({
           className="inline-flex min-h-[38px] cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full bg-contrast px-4 text-[12.5px] font-bold tracking-[-0.012em] text-contrast-foreground shadow-[0_6px_16px_-10px_rgba(18,18,18,.55)] transition-transform hover:bg-contrast-hover hover:-translate-y-px active:translate-y-0"
         >
           <Plus aria-hidden="true" className="size-[15px] opacity-60" />
-          Nova tarefa
+          {t("Nova tarefa")}
         </button>
       </div>
     </header>
@@ -142,6 +147,8 @@ function Kpi({ label, value, tone }: { label: string; value: number; tone?: stri
  * certo, sem um segundo estado que possa discordar do DOM.
  */
 export function ThemeToggle() {
+  const { t } = useI18n();
+
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
@@ -167,8 +174,8 @@ export function ThemeToggle() {
       type="button"
       onClick={toggle}
       aria-pressed={dark}
-      aria-label="Alternar tema claro e escuro"
-      title="Alternar tema claro e escuro"
+      aria-label={t("Alternar tema claro e escuro")}
+      title={t("Alternar tema claro e escuro")}
       className="grid size-[38px] shrink-0 cursor-pointer place-items-center rounded-full border border-line bg-surface text-muted transition-[color,border-color,background-color,transform] hover:-translate-y-px hover:border-line-strong hover:bg-panel hover:text-foreground active:translate-y-0"
     >
       {dark ? (

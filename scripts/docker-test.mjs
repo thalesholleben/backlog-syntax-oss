@@ -156,11 +156,13 @@ try {
   process.stdout.write("product_integration=ok\n");
   runLocal(
     "pnpm",
-    ["--filter", "@backlog-syntax/web", "exec", "playwright", "test", "e2e/real-stack.spec.ts"],
+    ["--filter", "@backlog-syntax/web", "exec", "playwright", "test", "--workers=1"],
     {
       ...process.env,
       RUN_REAL_STACK: "true",
       WEB_E2E_BASE_URL: `http://127.0.0.1:${webHostPort}`,
+      PUBLIC_WEB_URL: `http://127.0.0.1:${webHostPort}`,
+      NEXT_PUBLIC_API_URL: `http://127.0.0.1:${apiHostPort}`,
     },
   );
   process.stdout.write("browser_integration=ok\n");

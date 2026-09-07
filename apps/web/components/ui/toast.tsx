@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/provider";
 import { CheckCircle2, TriangleAlert, X } from "lucide-react";
 import {
   createContext,
@@ -84,6 +85,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 }
 
 function ToastCard({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) {
+  const { t } = useI18n();
+
   const id = useId();
   const Icon = toast.tone === "success" ? CheckCircle2 : TriangleAlert;
   return (
@@ -116,7 +119,7 @@ function ToastCard({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
       <button
         type="button"
         onClick={onDismiss}
-        aria-label="Fechar aviso"
+        aria-label={t("Fechar aviso")}
         className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted hover:bg-panel hover:text-foreground"
       >
         <X aria-hidden="true" className="size-4" />
