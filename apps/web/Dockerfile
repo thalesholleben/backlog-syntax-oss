@@ -33,15 +33,16 @@ COPY --from=build --chown=node:node /workspace/apps/web/.next/standalone ./
 COPY --from=build --chown=node:node /workspace/apps/web/.next/static ./apps/web/.next/static
 COPY --from=build --chown=node:node /workspace/apps/web/public ./apps/web/public
 
-# Next writes optimized images under .next/cache. The standalone output does not
-# ship that directory, so create it here.
-RUN mkdir -p apps/web/.next/cache && chown -R node:node apps/web/.next/cache
-
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
+# Do not pre-create apps/web/.next/cache here. A tmpfs mounted over an existing
+# directory inherits that directory's mode, so creating it as 0755 leaves the
+# mount root-owned and unwritable for the node user, and chown does not survive
+# because the tmpfs replaces the inode. Left absent, the mount gets 1777 and Next
+# creates the directory itself whenever the filesystem is writable.
 # Fail closed at boot instead of hanging at runtime. When .next/cache is not
 # writable the image optimizer rejects unhandled and never answers the request,
 # so every WebP-capable browser waits forever on /_next/image while health
