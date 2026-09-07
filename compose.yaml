@@ -94,7 +94,9 @@ services:
       retries: 30
     init: true
     read_only: true
-    tmpfs: [/tmp]
+    # Next writes optimized images under .next/cache. Without a writable mount the
+    # optimizer rejects unhandled and the request hangs forever instead of erroring.
+    tmpfs: [/tmp, /app/apps/web/.next/cache]
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     networks: [frontend]
