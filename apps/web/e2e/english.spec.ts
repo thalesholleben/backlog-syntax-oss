@@ -275,7 +275,10 @@ for (const width of [320, 390, 820, 1440]) {
       "/en/w/acme/settings/privacy",
     ]) {
       await page.goto(path);
-      await expect(page.getByRole("link", { name: "English", exact: true })).toBeVisible();
+      // Below sm the switcher collapses to a single circle with the other language,
+      // so assert the control itself rather than the current-locale entry.
+      await expect(page.getByRole("navigation", { name: "Language" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Português do Brasil" })).toBeVisible();
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
       ).toBe(true);

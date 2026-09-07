@@ -27,6 +27,13 @@ service inventory, backup locations and access procedures in private operations 
   on both runtime roles. Production must not contain seed/demo credentials.
 - Configure backup destinations, retention, restores and maintenance separately in
   private operations records. Do not publish provider account or storage identifiers.
+- Give the web container a writable `apps/web/.next/cache`. Next stores optimized
+  images there, and a hardened read-only root filesystem needs a volume or tmpfs
+  mounted at that path. The image creates the directory and refuses to boot when it
+  is not writable, because the alternative is worse than a crash: the optimizer
+  rejects unhandled, `/_next/image` never answers, and every WebP-capable browser
+  hangs while liveness and readiness stay green. Clients sending `Accept: */*`, curl
+  included, still receive the original file, so the surface looks healthy.
 
 ## Migrations and promotion
 
@@ -39,7 +46,9 @@ The exact service names and provider-specific commands belong to private operati
 ## Verify
 
 `/health` proves liveness. Require `/ready` HTTP 200 for database readiness and
-`/api/health` on the web app. Check HTTPS, cookie attributes, exact credentialed CORS
+`/api/health` on the web app. After a web promotion, request an optimized image with
+a browser `Accept` header and confirm it returns `image/webp` quickly; a health check
+cannot see that path failing. Check HTTPS, cookie attributes, exact credentialed CORS
 and the expected MCP resource audience. Never print cookies, OAuth codes or tokens.
 Use only authorized disposable accounts for any production walkthrough; automated
 security, load, integration and destructive tests belong in isolated local infrastructure.
