@@ -9,6 +9,7 @@
       "!**/test-results",
       "!**/playwright-report",
       "!**/blob-report",
+      "!.test-artifacts",
       "!spikes",
       "!.firecrawl",
       "!openapi"

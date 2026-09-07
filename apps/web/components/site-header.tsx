@@ -16,7 +16,6 @@ export function SiteHeader() {
           <ProductBrand />
         </Link>
         <div className="flex items-center gap-1 sm:gap-3">
-          <LanguageSwitcher />
           <nav aria-label={t("Navegação principal")} className="flex items-center gap-1 sm:gap-3">
             <Link
               href="/#como-funciona"
@@ -42,19 +41,16 @@ export function SiteHeader() {
             >
               GitHub
             </a>
+            {/* One entry point for both flows. The sign-in page links to account creation,
+                so merging the two buttons never strands someone without an account. */}
             <Link
               href="/entrar"
-              className="inline-flex min-h-12 items-center rounded-full px-3 py-3 text-sm font-semibold text-muted hover:text-foreground"
-            >
-              {t("Entrar")}
-            </Link>
-            <Link
-              href="/cadastro"
               className="inline-flex min-h-12 items-center rounded-full bg-contrast px-4 py-3 text-sm font-bold text-contrast-foreground hover:opacity-85"
             >
-              {t("Criar conta")}
+              {t("Entrar / Criar conta")}
             </Link>
           </nav>
+          <LanguageSwitcher />
         </div>
       </div>
     </header>

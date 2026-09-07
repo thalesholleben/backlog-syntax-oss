@@ -39,11 +39,15 @@ test("landing page renders an answer-first hero and the agent-native/FAQ section
   );
 });
 
-test("header links to entrar and cadastro", async ({ page }) => {
+test("the single header access button reaches sign-in and account creation", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("link", { name: "Entrar" }).click();
+  await expect(page.getByRole("link", { name: "Criar conta", exact: true })).toHaveCount(0);
+  await page.getByRole("link", { name: "Entrar / Criar conta" }).click();
   await expect(page).toHaveURL(/\/entrar$/);
   await expect(page.getByRole("heading", { name: "Entrar" })).toBeVisible();
+  // Merging the buttons must not strand anyone without an account.
+  await page.getByRole("link", { name: "Criar conta", exact: true }).click();
+  await expect(page).toHaveURL(/\/cadastro$/);
 });
 
 for (const width of [320, 390, 820, 1024, 1280, 1440, 1920]) {
