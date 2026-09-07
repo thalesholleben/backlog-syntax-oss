@@ -67,7 +67,10 @@ for (const locale of ["pt-BR", "en"] as const) {
     const workspaceUrl = page.url().replace(/\/(?:projetos|projects)\/.*$/, "");
     await page.goto(copy("/", "/en"));
     await page
-      .getByRole("link", { name: copy("Entrar", "Sign in"), exact: true })
+      .getByRole("link", {
+        name: copy("Entrar / Criar conta", "Sign in / Create account"),
+        exact: true,
+      })
       .first()
       .click();
     await expect(page).toHaveURL(workspaceUrl);
@@ -95,7 +98,10 @@ for (const locale of ["pt-BR", "en"] as const) {
       .first()
       .click();
     await page
-      .getByRole("link", { name: copy("Entrar", "Sign in"), exact: true })
+      .getByRole("link", {
+        name: copy("Entrar / Criar conta", "Sign in / Create account"),
+        exact: true,
+      })
       .first()
       .click();
     await expect(page).toHaveURL(workspaceUrl);

@@ -132,6 +132,8 @@ test("language switching preserves reset and OAuth parameters and app links reta
   await page.getByRole("link", { name: "Português do Brasil" }).click();
   await expect(page).toHaveURL(/\/consent\?client_id=fixture&scope=read%20write$/);
   await page.goto("/en");
+  await page.getByRole("link", { name: "Sign in / Create account" }).click();
+  await expect(page).toHaveURL(/\/en\/sign-in$/);
   await page.getByRole("link", { name: "Create account", exact: true }).click();
   await expect(page).toHaveURL(/\/en\/sign-up$/);
   await expect(page.getByLabel("Name", { exact: true })).toBeVisible();
