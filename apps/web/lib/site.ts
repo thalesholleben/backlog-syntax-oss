@@ -10,7 +10,7 @@ export const site = {
   name: "Backlog Syntax",
   description:
     "Backlog open source e multi-tenant onde o agente de IA tem identidade própria, assume tarefa com prazo e deixa trilha. Interface, REST e MCP sobre o mesmo domínio, com self-host ou versão hospedada gratuita.",
-  github: "https://github.com/thalesholleben/backlog-syntax",
+  github: "https://github.com/thalesholleben/backlog-syntax-oss",
   author: {
     name: "Thales Gomes",
     profile: "https://github.com/thalesholleben",

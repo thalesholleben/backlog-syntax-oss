@@ -10,4 +10,4 @@ All notable changes to this project will be documented here. The format follows 
 - Public Next.js shell and preliminary legal pages.
 - Architecture, security, privacy, contribution, and operations documentation.
 
-[Unreleased]: https://github.com/thalesholleben/backlog-syntax/commits/main
+[Unreleased]: https://github.com/thalesholleben/backlog-syntax-oss/commits/main
