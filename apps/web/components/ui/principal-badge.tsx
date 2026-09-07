@@ -1,11 +1,16 @@
+"use client";
+
+import type { Translator } from "@/lib/i18n/translate";
+
+import { useI18n } from "@/lib/i18n/provider";
 import { Bot, User } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { SubjectType } from "@/lib/domain-types";
 
-const labels: Record<SubjectType, string> = {
-  user: "Pessoa",
-  service_account: "Agente",
-};
+const labels = (t: Translator): Record<SubjectType, string> => ({
+  user: t("Pessoa"),
+  service_account: t("Agente"),
+});
 
 const icons: Record<SubjectType, typeof User> = {
   user: User,
@@ -21,6 +26,8 @@ export function PrincipalBadge({
   name?: string | undefined;
   className?: string | undefined;
 }) {
+  const { t } = useI18n();
+
   const Icon = icons[subjectType];
   return (
     <span
@@ -30,7 +37,7 @@ export function PrincipalBadge({
       )}
     >
       <Icon aria-hidden="true" className="size-3" />
-      {name ?? labels[subjectType]}
+      {name ?? labels(t)[subjectType]}
     </span>
   );
 }

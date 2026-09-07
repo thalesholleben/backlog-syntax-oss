@@ -31,6 +31,8 @@ export default function nextConfig(phase: string): NextConfig {
 
   return {
     output: "standalone",
+    // Preserve the listener origin for internal rewrites, including loopback IPv4 hosts.
+    skipProxyUrlNormalize: true,
     outputFileTracingRoot: path.join(import.meta.dirname, "../.."),
     poweredByHeader: false,
     reactStrictMode: true,

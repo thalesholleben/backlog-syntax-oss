@@ -9,6 +9,7 @@ of the standalone backlog/Tasks tooling used in the author's local workspace.
 - [Product scope](features/product-scope.md): supported workflows, invariants and non-goals.
 - [Authenticated app](features/app-web.md): login/session return, backlog, weekly Tasks and workspace docs.
 - [Public web](features/public-web.md): landing page, boxed documentation, branding and responsive hero.
+- [Languages and discovery](features/internationalization.md): English/Portuguese UI, SEO, Content Signals and Markdown negotiation.
 - [Architecture decisions](architecture/README.md): tenancy, database roles, concurrency and agent interfaces.
 - [Privacy baseline](privacy/README.md): inventory, rights, retention and provider limitations.
 

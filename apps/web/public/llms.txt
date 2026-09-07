@@ -1,11 +1,18 @@
 # Backlog Syntax
 
-> Backlog open source e multi-tenant para coordenar pessoas e agentes por REST, OpenAPI e MCP.
+> Open-source task management for people and AI agents, with REST, OpenAPI, MCP and PostgreSQL tenant isolation.
 
 ## Main pages
-- /: product status and architecture summary
-- /documentacao: public API, remote MCP, WebMCP, authorization and concurrency guide
-- /transparencia: current product and data-processing status
-- /privacidade: privacy notice, providers and data-subject rights
+- /en (English) and / (Brazilian Portuguese): product status and architecture
+- /en/docs and /documentacao: REST, remote MCP, WebMCP, authorization and concurrency
+- /en/transparency and /transparencia: product and data-processing status
+- /en/privacy and /privacidade: privacy notice, providers and data-subject rights
+- /en/terms and /termos: hosted-service terms
+- /en/cookies and /cookies: necessary cookies and current behavior
 
-This file is a low-cost discovery aid. It does not replace the website, README, or public documentation.
+Public pages also support `Accept: text/markdown` on the same URL. Private workspaces,
+authentication screens and API responses are excluded from this representation.
+Public content preferences: search=yes, ai-input=yes, ai-train=no.
+
+This optional discovery aid does not replace the website, README or public documentation.
+It is not a search-engine indexing requirement or a guarantee of AI citations.

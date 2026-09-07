@@ -1,6 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useI18n } from "@/lib/i18n/provider";
+import { useRouter } from "@/lib/i18n/navigation";
+
 import { type ReactNode, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/client";
@@ -11,6 +13,8 @@ type EntryState = "checking" | "guest" | "unverified" | "workspace-error";
 
 /** Navigation convenience only: the API still owns session validity and tenant access. */
 export function SessionEntry({ children }: { children: ReactNode }) {
+  const { t } = useI18n();
+
   const router = useRouter();
   const [state, setState] = useState<EntryState>("checking");
 
@@ -75,9 +79,11 @@ export function SessionEntry({ children }: { children: ReactNode }) {
   if (state === "checking") {
     return (
       <div className="space-y-3">
-        <h1 className="font-display text-3xl font-bold tracking-[-0.03em]">Só um instante</h1>
+        <h1 className="font-display text-3xl font-bold tracking-[-0.03em]">
+          {t("Só um instante")}
+        </h1>
         <p role="status" className="text-sm text-muted">
-          Verificando sua sessão…
+          {t("Verificando sua sessão…")}
         </p>
       </div>
     );
@@ -88,12 +94,16 @@ export function SessionEntry({ children }: { children: ReactNode }) {
       {state === "unverified" || state === "workspace-error" ? (
         <div className="mb-5 space-y-3">
           {state === "workspace-error" ? (
-            <h1 className="font-display text-3xl font-bold tracking-[-0.03em]">Abrir workspace</h1>
+            <h1 className="font-display text-3xl font-bold tracking-[-0.03em]">
+              {t("Abrir workspace")}
+            </h1>
           ) : null}
           <p role="alert" className="text-sm text-muted">
             {state === "workspace-error"
-              ? "Sua sessão está ativa, mas não foi possível abrir seus workspaces. Tente novamente."
-              : "Não foi possível verificar sua sessão. Tente novamente ou entre com sua conta."}
+              ? t(
+                  "Sua sessão está ativa, mas não foi possível abrir seus workspaces. Tente novamente.",
+                )
+              : t("Não foi possível verificar sua sessão. Tente novamente ou entre com sua conta.")}
           </p>
           <Button
             variant="secondary"
@@ -101,7 +111,7 @@ export function SessionEntry({ children }: { children: ReactNode }) {
               setState("checking");
             }}
           >
-            Tentar novamente
+            {t("Tentar novamente")}
           </Button>
         </div>
       ) : null}

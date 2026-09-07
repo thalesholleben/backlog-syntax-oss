@@ -1,5 +1,8 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/provider";
+import { errorMessage } from "@/lib/i18n/errors";
+import type { Translator } from "@/lib/i18n/translate";
 import type { Task } from "@backlog-syntax/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
@@ -43,12 +46,12 @@ export function useTasks(workspaceId: string) {
   });
 }
 
-function conflictMessage(error: unknown): string {
+function conflictMessage(error: unknown, t: Translator): string {
   if (error instanceof ApiError && error.status === 409) {
-    return "Essa tarefa mudou desde a última leitura. Recarregando os dados atuais.";
+    return t("Essa tarefa mudou desde a última leitura. Recarregando os dados atuais.");
   }
-  if (error instanceof ApiError) return error.message;
-  return "Não foi possível concluir a ação agora.";
+  if (error instanceof ApiError) return errorMessage(error, t);
+  return t("Não foi possível concluir a ação agora.");
 }
 
 /**
@@ -56,6 +59,7 @@ function conflictMessage(error: unknown): string {
  * stale-version conflict always resolves by refetching the real current state.
  */
 export function useTaskMutations(workspaceId: string) {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const { notify } = useToast();
 
@@ -64,7 +68,7 @@ export function useTaskMutations(workspaceId: string) {
   }
 
   function onError(error: unknown) {
-    notify("error", conflictMessage(error));
+    notify("error", conflictMessage(error, t));
     invalidate();
   }
 
@@ -154,10 +158,10 @@ export function useTaskMutations(workspaceId: string) {
     }, SOFT_DELETE_UNDO_MS);
     pendingDeletes.current.set(task.id, timer);
 
-    notify("success", `Tarefa "${task.title}" será removida em 5 segundos.`, {
+    notify("success", t('Tarefa "{0}" será removida em 5 segundos.', { "0": task.title }), {
       durationMs: SOFT_DELETE_UNDO_MS,
       action: {
-        label: "Desfazer",
+        label: t("Desfazer"),
         onClick: () => {
           const pending = pendingDeletes.current.get(task.id);
           if (pending) {

@@ -6,6 +6,10 @@
 backlog board, weekly Tasks, integration documentation, workspace settings and privacy self-service. Its critical path is tested against the
 real API and PostgreSQL stack.
 
+All flows are available in Brazilian Portuguese and English. The URL selects the language;
+workspace content and API contracts keep their original values. See
+[internationalization](internationalization.md) for routes and translation rules.
+
 ## Routes
 
 | Route | Indexing | Purpose |

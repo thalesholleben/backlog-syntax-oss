@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/provider";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,8 @@ export function TaskDrawer({
   task: BoardTask;
   onClose: () => void;
 }) {
+  const { t, locale } = useI18n();
+
   const mutations = useTaskMutations(workspaceId);
   const eventsQuery = useQuery({
     queryKey: ["task-events", task.id],
@@ -91,9 +94,13 @@ export function TaskDrawer({
           <div className="flex flex-wrap items-center gap-2 font-mono text-xs text-muted">
             <span>#{task.id.slice(0, 8)}</span>
             <span aria-hidden="true">·</span>
-            <span>versão {task.version}</span>
+            <span>
+              {t("versão")} {task.version}
+            </span>
             <span aria-hidden="true">·</span>
-            <span>atualizado há {relativeAge(task.updatedAt)}</span>
+            <span>
+              {t("atualizado há")} {relativeAge(task.updatedAt, undefined, locale)}
+            </span>
           </div>
 
           {task.claimedBy ? (
@@ -102,7 +109,7 @@ export function TaskDrawer({
               name={task.claimedBy.subjectId.slice(0, 8)}
             />
           ) : (
-            <p className="text-sm text-muted">Sem responsável no momento.</p>
+            <p className="text-sm text-muted">{t("Sem responsável no momento.")}</p>
           )}
 
           <div className="flex flex-wrap gap-2 pt-1">
@@ -120,7 +127,7 @@ export function TaskDrawer({
                   })
                 }
               >
-                Assumir tarefa
+                {t("Assumir tarefa")}
               </Button>
             ) : (
               <Button
@@ -135,11 +142,11 @@ export function TaskDrawer({
                   })
                 }
               >
-                Liberar claim
+                {t("Liberar claim")}
               </Button>
             )}
             <Button size="sm" variant="ghost" onClick={() => setHandoffOpen((current) => !current)}>
-              Fazer handoff
+              {t("Fazer handoff")}
             </Button>
             <Button
               size="sm"
@@ -150,7 +157,7 @@ export function TaskDrawer({
                 onClose();
               }}
             >
-              Excluir tarefa
+              {t("Excluir tarefa")}
             </Button>
           </div>
 
@@ -180,7 +187,7 @@ export function TaskDrawer({
                     checked={handoffTargetType === "user"}
                     onChange={() => setHandoffTargetType("user")}
                   />
-                  Pessoa
+                  {t("Pessoa")}
                 </label>
                 <label className="flex items-center gap-2 text-sm font-semibold">
                   <input
@@ -189,10 +196,10 @@ export function TaskDrawer({
                     checked={handoffTargetType === "service_account"}
                     onChange={() => setHandoffTargetType("service_account")}
                   />
-                  Agente
+                  {t("Agente")}
                 </label>
               </div>
-              <Field label="ID do destinatário">
+              <Field label={t("ID do destinatário")}>
                 {({ inputId }) => (
                   <Input
                     id={inputId}
@@ -202,7 +209,7 @@ export function TaskDrawer({
                   />
                 )}
               </Field>
-              <Field label="Nota do handoff">
+              <Field label={t("Nota do handoff")}>
                 {({ inputId }) => (
                   <Input
                     id={inputId}
@@ -213,7 +220,7 @@ export function TaskDrawer({
                 )}
               </Field>
               <Button type="submit" size="sm" isLoading={mutations.handoff.isPending}>
-                Confirmar handoff
+                {t("Confirmar handoff")}
               </Button>
             </form>
           ) : null}
@@ -221,7 +228,7 @@ export function TaskDrawer({
 
         <section className="space-y-3">
           <fieldset>
-            <legend className="mb-2 text-sm font-bold">Estado</legend>
+            <legend className="mb-2 text-sm font-bold">{t("Estado")}</legend>
             <div className="flex flex-wrap gap-2">
               {TASK_STATUSES.map((status) => (
                 <button
@@ -239,14 +246,14 @@ export function TaskDrawer({
                     aria-hidden="true"
                     className={`size-1.5 rounded-full ${statusDotClass[status]}`}
                   />
-                  {statusLabel[status]}
+                  {t(statusLabel[status])}
                 </button>
               ))}
             </div>
           </fieldset>
 
           <fieldset>
-            <legend className="mb-2 text-sm font-bold">Prioridade</legend>
+            <legend className="mb-2 text-sm font-bold">{t("Prioridade")}</legend>
             <div className="flex flex-wrap gap-2">
               {priorities.map((priority) => (
                 <button
@@ -260,7 +267,7 @@ export function TaskDrawer({
                       : "border-line text-muted hover:text-foreground"
                   }`}
                 >
-                  {priorityLabel[priority]}
+                  {t(priorityLabel[priority])}
                 </button>
               ))}
             </div>
@@ -269,7 +276,7 @@ export function TaskDrawer({
 
         <section className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Dia na agenda">
+            <Field label={t("Dia na agenda")}>
               {({ inputId }) => (
                 <Input
                   id={inputId}
@@ -279,7 +286,7 @@ export function TaskDrawer({
                 />
               )}
             </Field>
-            <Field label="Prazo">
+            <Field label={t("Prazo")}>
               {({ inputId }) => (
                 <Input
                   id={inputId}
@@ -290,7 +297,7 @@ export function TaskDrawer({
               )}
             </Field>
           </div>
-          <Field label="Título">
+          <Field label={t("Título")}>
             {({ inputId }) => (
               <Input
                 id={inputId}
@@ -301,7 +308,7 @@ export function TaskDrawer({
           </Field>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="task-description" className="text-sm font-bold">
-              Descrição
+              {t("Descrição")}
             </label>
             <textarea
               id="task-description"
@@ -313,25 +320,25 @@ export function TaskDrawer({
           </div>
           {dirty ? (
             <Button size="sm" isLoading={mutations.update.isPending} onClick={saveDetails}>
-              Salvar alterações
+              {t("Salvar alterações")}
             </Button>
           ) : null}
         </section>
 
         <section className="space-y-3">
-          <h3 className="text-sm font-bold">Atividade e evidência</h3>
+          <h3 className="text-sm font-bold">{t("Atividade e evidência")}</h3>
           <ul className="space-y-2">
             {eventsQuery.data?.map((item) => (
               <li key={item.id} className="rounded-2xl border border-line bg-panel p-3 text-sm">
                 <div className="flex items-center justify-between gap-2 font-mono text-xs text-muted">
                   <span>{item.eventType}</span>
-                  <span>{relativeAge(item.createdAt)}</span>
+                  <span>{relativeAge(item.createdAt, undefined, locale)}</span>
                 </div>
                 <p className="mt-1 leading-6">{item.content}</p>
               </li>
             ))}
             {eventsQuery.data?.length === 0 ? (
-              <p className="text-sm text-muted">Sem eventos registrados ainda.</p>
+              <p className="text-sm text-muted">{t("Sem eventos registrados ainda.")}</p>
             ) : null}
           </ul>
 
@@ -353,8 +360,8 @@ export function TaskDrawer({
             }}
           >
             <Input
-              aria-label="Adicionar comentário"
-              placeholder="Adicionar comentário…"
+              aria-label={t("Adicionar comentário")}
+              placeholder={t("Adicionar comentário…")}
               value={comment}
               onChange={(event) => setComment(event.target.value)}
             />
@@ -364,7 +371,7 @@ export function TaskDrawer({
               variant="secondary"
               isLoading={mutations.addEvent.isPending}
             >
-              Enviar
+              {t("Enviar")}
             </Button>
           </form>
         </section>

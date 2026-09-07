@@ -1,8 +1,13 @@
 "use client";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
+import type { Translator } from "@/lib/i18n/translate";
+
+import { useI18n } from "@/lib/i18n/provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/i18n/navigation";
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -28,9 +33,11 @@ function slugify(value: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-const steps = ["Conta", "Workspace", "Projeto"] as const;
+const steps = (t: Translator) => [t("Conta"), "Workspace", t("Projeto")] as const;
 
 export function OnboardingWizard() {
+  const { t } = useI18n();
+
   const session = useRequireSession();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -61,13 +68,13 @@ export function OnboardingWizard() {
       queryClient.invalidateQueries({ queryKey: ["workspaces"] });
       setWorkspace(created);
     },
-    onError: () => notify("error", "Não foi possível criar o workspace agora."),
+    onError: () => notify("error", t("Não foi possível criar o workspace agora.")),
   });
 
   const [newProjectName, setNewProjectName] = useState("");
   const createProjectMutation = useMutation({
     mutationFn: () => {
-      if (!workspace) throw new Error("workspace ausente");
+      if (!workspace) throw new Error(t("workspace ausente"));
       return createProject(
         workspace.id,
         { name: newProjectName, slug: slugify(newProjectName) },
@@ -75,7 +82,7 @@ export function OnboardingWizard() {
       );
     },
     onSuccess: (project) => finish(project),
-    onError: () => notify("error", "Não foi possível criar o projeto agora."),
+    onError: () => notify("error", t("Não foi possível criar o projeto agora.")),
   });
 
   function finish(project: ProjectSummary) {
@@ -87,8 +94,11 @@ export function OnboardingWizard() {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-4 py-16 sm:px-6">
-      <ol className="mb-10 flex items-center gap-3" aria-label="Progresso do onboarding">
-        {steps.map((label, index) => (
+      <div className="mb-6 flex justify-end">
+        <LanguageSwitcher />
+      </div>
+      <ol className="mb-10 flex items-center gap-3" aria-label={t("Progresso do onboarding")}>
+        {steps(t).map((label, index) => (
           <li key={label} className="flex flex-1 items-center gap-3">
             <span
               className={`flex size-8 shrink-0 items-center justify-center rounded-full font-mono text-xs font-bold ${
@@ -106,7 +116,7 @@ export function OnboardingWizard() {
             >
               {label}
             </span>
-            {index < steps.length - 1 ? (
+            {index < steps(t).length - 1 ? (
               <span aria-hidden="true" className="h-px flex-1 bg-line" />
             ) : null}
           </li>
@@ -117,18 +127,20 @@ export function OnboardingWizard() {
         <div className="space-y-6">
           <div>
             <h1 className="font-display text-2xl font-bold tracking-[-0.02em]">
-              Escolha um workspace
+              {t("Escolha um workspace")}
             </h1>
             <p className="mt-2 text-sm text-muted">
-              Cada workspace isola seus dados por RLS. Você pode criar quantos precisar.
+              {t("Cada workspace isola seus dados por RLS. Você pode criar quantos precisar.")}
             </p>
           </div>
 
           {workspacesQuery.isLoading ? (
-            <p className="text-sm text-muted">Carregando workspaces…</p>
+            <p className="text-sm text-muted">{t("Carregando workspaces…")}</p>
           ) : null}
           {workspacesQuery.isError ? (
-            <p className="text-sm text-danger">Não foi possível carregar seus workspaces agora.</p>
+            <p className="text-sm text-danger">
+              {t("Não foi possível carregar seus workspaces agora.")}
+            </p>
           ) : null}
 
           {workspacesQuery.data && workspacesQuery.data.length > 0 ? (
@@ -155,19 +167,19 @@ export function OnboardingWizard() {
               if (newWorkspaceName.trim()) createWorkspaceMutation.mutate();
             }}
           >
-            <Field label="Novo workspace">
+            <Field label={t("Novo workspace")}>
               {({ inputId }) => (
                 <Input
                   id={inputId}
                   required
-                  placeholder="Ex.: Minha equipe"
+                  placeholder={t("Ex.: Minha equipe")}
                   value={newWorkspaceName}
                   onChange={(event) => setNewWorkspaceName(event.target.value)}
                 />
               )}
             </Field>
             <Button type="submit" isLoading={createWorkspaceMutation.isPending} className="w-full">
-              Criar workspace
+              {t("Criar workspace")}
             </Button>
           </form>
         </div>
@@ -176,10 +188,12 @@ export function OnboardingWizard() {
       {step === 2 ? (
         <div className="space-y-6">
           <div>
-            <h1 className="font-display text-2xl font-bold tracking-[-0.02em]">Primeiro projeto</h1>
+            <h1 className="font-display text-2xl font-bold tracking-[-0.02em]">
+              {t("Primeiro projeto")}
+            </h1>
             <p className="mt-2 text-sm text-muted">
-              Em <strong className="text-foreground">{workspace?.name}</strong>. Um projeto agrupa o
-              quadro de tarefas.
+              {t("Em")} <strong className="text-foreground">{workspace?.name}</strong>
+              {t(". Um projeto agrupa o quadro de tarefas.")}
             </p>
           </div>
 
@@ -206,19 +220,19 @@ export function OnboardingWizard() {
               if (newProjectName.trim()) createProjectMutation.mutate();
             }}
           >
-            <Field label="Novo projeto">
+            <Field label={t("Novo projeto")}>
               {({ inputId }) => (
                 <Input
                   id={inputId}
                   required
-                  placeholder="Ex.: Backlog Syntax"
+                  placeholder={t("Ex.: Backlog Syntax")}
                   value={newProjectName}
                   onChange={(event) => setNewProjectName(event.target.value)}
                 />
               )}
             </Field>
             <Button type="submit" isLoading={createProjectMutation.isPending} className="w-full">
-              Criar projeto e abrir o quadro
+              {t("Criar projeto e abrir o quadro")}
             </Button>
           </form>
 
@@ -227,7 +241,7 @@ export function OnboardingWizard() {
             onClick={() => setWorkspace(null)}
             className="text-sm font-semibold text-muted hover:text-foreground"
           >
-            Trocar de workspace
+            {t("Trocar de workspace")}
           </button>
         </div>
       ) : null}

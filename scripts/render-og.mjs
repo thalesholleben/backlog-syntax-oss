@@ -5,8 +5,9 @@ import { pathToFileURL } from "node:url";
 const requireFromWeb = createRequire(resolve("apps/web/package.json"));
 const { chromium } = requireFromWeb("@playwright/test");
 
-const sourcePath = resolve("docs/assets/og/backlog-og.html");
-const outputPath = resolve("apps/web/public/brand/backlog-og.png");
+const english = process.argv.includes("--en");
+const sourcePath = resolve(`docs/assets/og/backlog-og${english ? "-en" : ""}.html`);
+const outputPath = resolve(`apps/web/public/brand/backlog-og${english ? "-en" : ""}.png`);
 
 const browser = await chromium.launch({ headless: true });
 

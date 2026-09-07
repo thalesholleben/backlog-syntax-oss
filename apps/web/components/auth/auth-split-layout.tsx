@@ -1,5 +1,9 @@
-import Link from "next/link";
+"use client";
+
+import { useI18n } from "@/lib/i18n/provider";
+import Link from "@/lib/i18n/navigation";
 import type { ReactNode } from "react";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { ProductBrand, SyntaxLabLogo } from "@/components/product-brand";
 import { statusDotClass, statusLabel } from "@/lib/task-presentation";
 
@@ -14,30 +18,35 @@ export function AuthSplitLayout({
   panelTitle: string;
   panelBody: string;
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="grid min-h-dvh grid-cols-1 lg:grid-cols-2">
       <div className="flex flex-col px-4 py-8 sm:px-8 sm:py-10 lg:order-2 lg:border-l lg:border-line lg:px-16">
-        <Link
-          href="/"
-          className="inline-flex w-fit items-center gap-2 font-display text-base font-bold"
-        >
-          <ProductBrand />
-        </Link>
+        <div className="flex items-center justify-between gap-4">
+          <Link
+            href="/"
+            className="inline-flex w-fit items-center gap-2 font-display text-base font-bold"
+          >
+            <ProductBrand />
+          </Link>
+          <LanguageSwitcher />
+        </div>
         <main id="conteudo" className="flex flex-1 items-center py-10">
           <div className="w-full max-w-sm">{children}</div>
         </main>
         <footer className="flex items-center justify-between gap-4 border-t border-line pt-5">
           <div>
             <p className="font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-faint">
-              Um produto da
+              {t("Um produto da")}
             </p>
-            <p className="mt-1 text-xs text-muted">Software, automação e IA em produção.</p>
+            <p className="mt-1 text-xs text-muted">{t("Software, automação e IA em produção.")}</p>
           </div>
           <a
             href="https://syntaxlab.com.br"
             target="_blank"
             rel="noreferrer"
-            aria-label="Conhecer a Syntax Lab"
+            aria-label={t("Conhecer a Syntax Lab")}
             className="rounded-control p-1.5 transition-opacity hover:opacity-65 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <SyntaxLabLogo className="size-11" />
@@ -69,14 +78,14 @@ export function AuthSplitLayout({
                   aria-hidden="true"
                   className={`size-1.5 rounded-full ${statusDotClass[status]}`}
                 />
-                {statusLabel[status]}
+                {t(statusLabel[status])}
               </span>
             ))}
           </div>
           <div className="mt-4 space-y-2 font-mono text-xs leading-6 opacity-80">
-            <p>{"> pessoa define critérios de aceite"}</p>
-            <p>{"> agente faz claim com lease de 30min"}</p>
-            <p>{"> handoff registra evidência + versão"}</p>
+            <p>{t("> pessoa define critérios de aceite")}</p>
+            <p>{t("> agente faz claim com lease de 30min")}</p>
+            <p>{t("> handoff registra evidência + versão")}</p>
           </div>
         </div>
       </aside>

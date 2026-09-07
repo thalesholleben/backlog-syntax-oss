@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/provider";
 import { Eye, EyeOff } from "lucide-react";
 import { type InputHTMLAttributes, useId, useState } from "react";
 import { cn } from "@/lib/cn";
@@ -9,6 +10,8 @@ export function PasswordInput({
   autoComplete = "current-password",
   ...props
 }: InputHTMLAttributes<HTMLInputElement>) {
+  const { t } = useI18n();
+
   const [visible, setVisible] = useState(false);
   const toggleId = useId();
 
@@ -29,7 +32,7 @@ export function PasswordInput({
         id={toggleId}
         type="button"
         onClick={() => setVisible((current) => !current)}
-        aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
+        aria-label={visible ? t("Ocultar senha") : t("Mostrar senha")}
         aria-pressed={visible}
         className="absolute inset-y-0 right-1 my-1 flex w-10 items-center justify-center rounded-control text-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-accent"
       >

@@ -22,6 +22,8 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 
 FROM node:24.13.0-bookworm-slim AS runtime
 
+ARG PUBLIC_WEB_URL
+ENV PUBLIC_WEB_URL=$PUBLIC_WEB_URL
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000

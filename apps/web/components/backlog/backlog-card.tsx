@@ -1,5 +1,8 @@
 "use client";
 
+import type { Translator } from "@/lib/i18n/translate";
+
+import { useI18n } from "@/lib/i18n/provider";
 import { useDraggable } from "@dnd-kit/core";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, Trash2 } from "lucide-react";
@@ -8,7 +11,7 @@ import { listTaskEvents } from "@/lib/api/tasks";
 import type { BoardTask } from "@/lib/backlog/board-task";
 import {
   COLUMNS,
-  dateTimePt,
+  formatDateTime,
   type Owner,
   pluralDays,
   STALE_LIMIT_DAYS,
@@ -20,12 +23,12 @@ import { daysFromToday } from "@/lib/tasks/week";
 
 const PRIORITIES: TaskPriority[] = ["low", "medium", "high", "urgent"];
 
-const EVENT_LABEL: Record<string, string> = {
-  evidence: "Evidência",
-  decision_request: "Pediu decisão",
-  decision: "Decisão",
-  comment: "Comentário",
-};
+const EVENT_LABEL = (t: Translator): Record<string, string> => ({
+  evidence: t("Evidência"),
+  decision_request: t("Pediu decisão"),
+  decision: t("Decisão"),
+  comment: t("Comentário"),
+});
 
 export interface BacklogCardProps {
   task: BoardTask;
@@ -62,6 +65,8 @@ export function BacklogCard({
   onOpenDetails,
   onDelete,
 }: BacklogCardProps) {
+  const { t, locale } = useI18n();
+
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `task:${task.id}`,
     data: { taskId: task.id, status: task.status },
@@ -77,10 +82,10 @@ export function BacklogCard({
   const overdue = !done && task.dueDate ? daysFromToday(task.dueDate) < 0 : false;
   const stale = overdue || (!done && !task.dueDate && days > STALE_LIMIT_DAYS);
   const badge = done
-    ? `fechada ${shortDate(task.updatedAt)}`
+    ? t("fechada {0}", { "0": shortDate(task.updatedAt, locale) })
     : task.dueDate
-      ? `prazo ${shortDate(task.dueDate)}`
-      : pluralDays(days);
+      ? t("prazo {0}", { "0": shortDate(task.dueDate, locale) })
+      : pluralDays(days, locale);
   const claim = task.claimedBy;
 
   return (
@@ -100,7 +105,7 @@ export function BacklogCard({
         onClick={onToggle}
         aria-expanded={open}
         aria-controls={`ficha-${task.id}`}
-        aria-label={`Detalhes da tarefa ${task.title}`}
+        aria-label={t("Detalhes da tarefa {0}", { "0": task.title })}
         className={`block w-full px-[9px] pb-[9px] pt-2 text-left focus-visible:rounded-control focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--ink-focus)] ${
           open ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"
         }`}
@@ -118,7 +123,7 @@ export function BacklogCard({
           </span>
           {claim ? (
             <span
-              title="lease ativo"
+              title={t("lease ativo")}
               className="rounded-full bg-warn px-[7px] py-1 font-mono text-[8.5px] font-bold leading-none text-[#121212]"
             >
               lease
@@ -152,13 +157,13 @@ export function BacklogCard({
           <div className={`px-2.5 ${open ? "pb-2.5" : ""}`}>
             <div className="rounded-control bg-ink-sheet px-3 py-[11px] shadow-[inset_0_0_0_1px_var(--ink-line)]">
               <p className="whitespace-pre-line text-[11.6px] leading-[1.6] text-ink-muted">
-                {task.description?.trim() || "Sem descrição."}
+                {task.description?.trim() || t("Sem descrição.")}
               </p>
 
               {task.blockedReason ? (
                 <p className="mt-2.5 border-t border-ink-line pt-2.5 text-[11.6px] leading-[1.6] text-stale-ink">
                   <span className="font-mono text-[9px] font-bold uppercase tracking-[0.08em]">
-                    Motivo
+                    {t("Motivo")}
                   </span>
                   <br />
                   {task.blockedReason}
@@ -167,28 +172,32 @@ export function BacklogCard({
 
               <div className="mt-2.5 flex flex-wrap gap-x-3.5 border-t border-ink-line pt-[9px] font-mono text-[10px] font-semibold leading-[1.7] text-ink-faint">
                 <span>
-                  criada <em className="not-italic text-ink-muted">{shortDate(task.createdAt)}</em>
+                  {t("criada")}{" "}
+                  <em className="not-italic text-ink-muted">{shortDate(task.createdAt, locale)}</em>
                 </span>
                 <span>
-                  {done ? "concluída" : "parada há"}{" "}
+                  {done ? t("concluída") : t("parada há")}{" "}
                   <em className="not-italic text-ink-muted">
-                    {done ? shortDate(task.updatedAt) : pluralDays(days)}
+                    {done ? shortDate(task.updatedAt, locale) : pluralDays(days, locale)}
                   </em>
                 </span>
                 <span>
-                  última mudança{" "}
-                  <em className="not-italic text-ink-muted">{dateTimePt(task.updatedAt)}</em>
+                  {t("última mudança")}{" "}
+                  <em className="not-italic text-ink-muted">
+                    {formatDateTime(task.updatedAt, locale)}
+                  </em>
                 </span>
                 {task.dueDate ? (
                   <span>
-                    prazo <em className="not-italic text-ink-muted">{shortDate(task.dueDate)}</em>
+                    {t("prazo")}{" "}
+                    <em className="not-italic text-ink-muted">{shortDate(task.dueDate, locale)}</em>
                   </span>
                 ) : null}
                 {claim ? (
                   <span>
-                    lease até{" "}
+                    {t("lease até")}{" "}
                     <em className="not-italic text-ink-muted">
-                      {dateTimePt(claim.leaseExpiresAt)}
+                      {formatDateTime(claim.leaseExpiresAt, locale)}
                     </em>
                   </span>
                 ) : null}
@@ -209,7 +218,7 @@ export function BacklogCard({
                 >
                   {COLUMNS.map((column) => (
                     <option key={column.key} value={column.key}>
-                      {column.label}
+                      {t(column.label)}
                     </option>
                   ))}
                 </select>
@@ -220,7 +229,7 @@ export function BacklogCard({
                   htmlFor={`prio-${task.id}`}
                   className="font-mono text-[9px] font-bold uppercase tracking-[0.08em] text-ink-faint"
                 >
-                  Prioridade
+                  {t("Prioridade")}
                 </label>
                 <select
                   id={`prio-${task.id}`}
@@ -230,7 +239,7 @@ export function BacklogCard({
                 >
                   {PRIORITIES.map((item) => (
                     <option key={item} value={item}>
-                      {priorityLabel[item]}
+                      {t(priorityLabel[item])}
                     </option>
                   ))}
                 </select>
@@ -241,7 +250,7 @@ export function BacklogCard({
                   htmlFor={`prazo-${task.id}`}
                   className="font-mono text-[9px] font-bold uppercase tracking-[0.08em] text-ink-faint"
                 >
-                  Prazo
+                  {t("Prazo")}
                 </label>
                 <input
                   id={`prazo-${task.id}`}
@@ -254,17 +263,17 @@ export function BacklogCard({
 
               <div className="mt-2.5 border-t border-ink-line pt-[9px]">
                 <p className="font-mono text-[9px] font-bold uppercase tracking-[0.08em] text-ink-faint">
-                  Trilha de eventos
+                  {t("Trilha de eventos")}
                 </p>
                 <ul className="mt-[7px] flex flex-col gap-1">
                   {events.isLoading ? (
                     <li className="font-mono text-[10px] leading-[1.45] text-ink-faint">
-                      carregando…
+                      {t("carregando…")}
                     </li>
                   ) : null}
                   {events.data?.length === 0 ? (
                     <li className="font-mono text-[10px] leading-[1.45] text-ink-faint">
-                      nada registrado ainda
+                      {t("nada registrado ainda")}
                     </li>
                   ) : null}
                   {events.data
@@ -276,9 +285,9 @@ export function BacklogCard({
                         className="font-mono text-[10px] leading-[1.45] text-ink-faint"
                       >
                         <b className="font-bold text-ink-muted">
-                          {EVENT_LABEL[event.eventType] ?? event.eventType}
+                          {EVENT_LABEL(t)[event.eventType] ?? event.eventType}
                         </b>{" "}
-                        · {dateTimePt(event.createdAt)} · {event.content}
+                        · {formatDateTime(event.createdAt, locale)} · {event.content}
                       </li>
                     ))}
                 </ul>
@@ -290,13 +299,13 @@ export function BacklogCard({
                   onClick={onOpenDetails}
                   className="rounded-full border border-ink-line px-3 py-[7px] text-[11px] font-bold text-ink-muted hover:bg-ink-3 hover:text-ink-foreground"
                 >
-                  Ficha completa
+                  {t("Ficha completa")}
                 </button>
                 <button
                   type="button"
                   onClick={onDelete}
-                  aria-label={`Excluir a tarefa ${task.title}`}
-                  title="Excluir"
+                  aria-label={t("Excluir a tarefa {0}", { "0": task.title })}
+                  title={t("Excluir")}
                   className="grid size-[34px] place-items-center rounded-full border border-ink-line text-ink-faint hover:border-stale-line hover:bg-stale-bg hover:text-stale-ink"
                 >
                   <Trash2 aria-hidden="true" className="size-[15px]" />

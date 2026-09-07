@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/provider";
 import { useEffect, useState } from "react";
 import {
   BacklogDialog,
@@ -31,6 +32,8 @@ export function NewTaskDialog({
   defaultProjectId: string;
   defaultScheduledDate?: string;
 }) {
+  const { t } = useI18n();
+
   const mutations = useTaskMutations(workspaceId);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -59,9 +62,11 @@ export function NewTaskDialog({
     <BacklogDialog
       open={open}
       onClose={close}
-      eyebrow="Backlog · nova entrada"
-      title="Adicionar uma tarefa"
-      intro="Preencha o contexto mínimo. A tarefa entra no quadro já gravada, com versão própria e trilha de eventos, visível para pessoa e agente na mesma hora."
+      eyebrow={t("Backlog · nova entrada")}
+      title={t("Adicionar uma tarefa")}
+      intro={t(
+        "Preencha o contexto mínimo. A tarefa entra no quadro já gravada, com versão própria e trilha de eventos, visível para pessoa e agente na mesma hora.",
+      )}
     >
       <form
         onSubmit={(event) => {
@@ -83,7 +88,7 @@ export function NewTaskDialog({
       >
         <div className="flex flex-col gap-[7px]">
           <label htmlFor="nt-titulo" className={fieldLabel}>
-            Título
+            {t("Título")}
           </label>
           <input
             id="nt-titulo"
@@ -92,21 +97,21 @@ export function NewTaskDialog({
             autoComplete="off"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            placeholder="Ex.: Revisar o contrato do endpoint de tarefas"
+            placeholder={t("Ex.: Revisar o contrato do endpoint de tarefas")}
             className={fieldControl}
           />
         </div>
 
         <div className="mt-[18px] flex flex-col gap-[7px]">
           <label htmlFor="nt-resumo" className={fieldLabel}>
-            Resumo
+            {t("Resumo")}
           </label>
           <textarea
             id="nt-resumo"
             maxLength={50_000}
             value={description}
             onChange={(event) => setDescription(event.target.value)}
-            placeholder="O que é e o que falta para essa tarefa avançar?"
+            placeholder={t("O que é e o que falta para essa tarefa avançar?")}
             className={`${fieldControl} min-h-[84px] resize-y`}
           />
         </div>
@@ -114,7 +119,7 @@ export function NewTaskDialog({
         <div className="mt-[18px] grid gap-[18px] sm:grid-cols-2">
           <div className="flex flex-col gap-[7px]">
             <label htmlFor="nt-projeto" className={fieldLabel}>
-              Projeto
+              {t("Projeto")}
             </label>
             <select
               id="nt-projeto"
@@ -132,7 +137,7 @@ export function NewTaskDialog({
           </div>
           <div className="flex flex-col gap-[7px]">
             <label htmlFor="nt-prioridade" className={fieldLabel}>
-              Prioridade
+              {t("Prioridade")}
             </label>
             <select
               id="nt-prioridade"
@@ -142,7 +147,7 @@ export function NewTaskDialog({
             >
               {PRIORITIES.map((item) => (
                 <option key={item} value={item}>
-                  {priorityLabel[item]}
+                  {t(priorityLabel[item])}
                 </option>
               ))}
             </select>
@@ -152,7 +157,7 @@ export function NewTaskDialog({
         <div className="mt-[18px] grid gap-[18px] sm:grid-cols-2">
           <div className="flex flex-col gap-[7px]">
             <label htmlFor="nt-agendada" className={fieldLabel}>
-              Dia na agenda
+              {t("Dia na agenda")}
             </label>
             <input
               id="nt-agendada"
@@ -164,7 +169,7 @@ export function NewTaskDialog({
           </div>
           <div className="flex flex-col gap-[7px]">
             <label htmlFor="nt-prazo" className={fieldLabel}>
-              Prazo
+              {t("Prazo")}
             </label>
             <input
               id="nt-prazo"
@@ -177,20 +182,21 @@ export function NewTaskDialog({
         </div>
 
         <p className="mt-2.5 text-[10.5px] leading-[1.45] text-faint">
-          Agenda é quando você pretende executar. Prazo é quando a tarefa vence; um não altera o
-          outro. Quem assume registra o claim depois, com lease próprio.
+          {t(
+            "Agenda é quando você pretende executar. Prazo é quando a tarefa vence; um não altera o outro. Quem assume registra o claim depois, com lease próprio.",
+          )}
         </p>
 
         <div className={dialogActions}>
           <button type="button" onClick={close} className={cancelButton}>
-            Cancelar
+            {t("Cancelar")}
           </button>
           <button
             type="submit"
             disabled={mutations.create.isPending || !projects.length}
             className={submitButton}
           >
-            {mutations.create.isPending ? "Adicionando…" : "Adicionar tarefa"}
+            {mutations.create.isPending ? "Adicionando…" : t("Adicionar tarefa")}
           </button>
         </div>
       </form>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/provider";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
@@ -22,6 +23,8 @@ export function BacklogDialog({
   intro?: string;
   children: React.ReactNode;
 }) {
+  const { t } = useI18n();
+
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -68,7 +71,7 @@ export function BacklogDialog({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Fechar"
+          aria-label={t("Fechar")}
           className="grid size-[34px] shrink-0 place-items-center rounded-full border border-line bg-surface text-lg leading-none text-muted hover:border-line-strong hover:bg-panel hover:text-foreground"
         >
           ×

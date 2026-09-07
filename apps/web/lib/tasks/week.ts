@@ -1,3 +1,4 @@
+import type { Locale } from "@/lib/i18n/routing";
 import type { Task } from "@backlog-syntax/contracts";
 
 export const DAY_MS = 86_400_000;
@@ -39,7 +40,7 @@ export function addDays(value: Date, amount: number): Date {
   return date;
 }
 
-export function weekColumns(reference: Date): readonly WeekColumn[] {
+export function weekColumns(reference: Date, locale: Locale = "pt-BR"): readonly WeekColumn[] {
   const monday = startOfWeek(reference);
   const specs = [
     ["mon", "Segunda", "SEG", 0],
@@ -50,15 +51,24 @@ export function weekColumns(reference: Date): readonly WeekColumn[] {
   ] as const;
   const weekdays = specs.map(([key, label, shortLabel, offset]) => {
     const date = isoDate(addDays(monday, offset));
-    return { key, label, shortLabel, dates: [date], scheduleDate: date };
+    return {
+      key,
+      label:
+        locale === "en"
+          ? new Intl.DateTimeFormat("en", { weekday: "long" }).format(parseIsoDate(date))
+          : label,
+      shortLabel: locale === "en" ? key.toUpperCase() : shortLabel,
+      dates: [date],
+      scheduleDate: date,
+    };
   });
   const saturday = isoDate(addDays(monday, 5));
   return [
     ...weekdays,
     {
       key: "weekend",
-      label: "Fim de semana",
-      shortLabel: "SÁB–DOM",
+      label: locale === "en" ? "Weekend" : "Fim de semana",
+      shortLabel: locale === "en" ? "SAT–SUN" : "SÁB–DOM",
       dates: [saturday, isoDate(addDays(monday, 6))],
       scheduleDate: saturday,
     },
@@ -79,7 +89,7 @@ export function daysFromToday(date: string, today: Date = new Date()): number {
   return Math.round((parseIsoDate(date).getTime() - localDate(today).getTime()) / DAY_MS);
 }
 
-export function shortDay(date: string): string {
+export function shortDay(date: string, locale: Locale = "pt-BR"): string {
   const [year, month, day] = date.split("-");
-  return year && month && day ? `${day}/${month}` : date;
+  return year && month && day ? (locale === "en" ? `${month}/${day}` : `${day}/${month}`) : date;
 }
