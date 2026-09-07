@@ -1,0 +1,72 @@
+Backlog Syntax P0.2b MCP OAuth runtime spike
+Date: 2026-08-31
+Environment: local Windows, Node.js v24.13.0, pnpm 10.30.0, Docker Desktop 29.4.2
+Database: PostgreSQL 18 ephemeral tmpfs, loopback only
+External credentials: none
+External production services: none
+
+Dependency alignment
+Command: pnpm install
+Result: PASS; no peer warning. The only install notice was pnpm's normal ignored esbuild build-script notice.
+
+Full idempotent validation
+Command: pnpm test:docker
+Result: PASS, exit code 0
+Lifecycle: previous state removed; direct Node ESM probe passed; PostgreSQL created healthy; typecheck and tests passed; container/network/data removed.
+
+Direct Node runtime probe
+Before correction: node import of src/oauth-runtime.mjs failed with ERR_MODULE_NOT_FOUND for src/spike.js.
+Command: pnpm probe:node
+Result: PASS, exit code 0; output: Node ESM runtime probe: PASS
+Runtime loaders used: Node.js only; no Vitest, tsx, custom loader, or transitive resolver.
+Cross-review status: no P0/P1; the single P2 above is corrected and covered by the idempotent gate.
+
+Typecheck
+Command: pnpm typecheck (executed by test:docker)
+Result: PASS, exit code 0
+
+Tests
+Command: pnpm test:evidence (executed by test:docker with local DATABASE_URL)
+Result: PASS, exit code 0
+Test files: 2 passed
+Tests: 16 passed, 0 failed
+Vitest duration: 3.04s
+
+New PostgreSQL/OAuth runtime assertions
+1. PostgreSQL server major version is 18.
+2. Better Auth official migrations persist the test user and session.
+3. Authorization rejects absent code_challenge.
+4. Authorization rejects code_challenge_method=plain.
+5. Authorization rejects an unregistered redirect_uri.
+6. Token exchange rejects the wrong PKCE verifier.
+7. Authorization code + consent + PKCE S256 produces provider-issued access and refresh tokens.
+8. Provider token carries the expected issuer, MCP resource audience, and mcp:read scope.
+9. The provider token is accepted by requireMcpAuth and MCP Streamable HTTP.
+10. Provider token without mcp:read is rejected by the MCP resource with 403.
+11. A different requested resource/audience is rejected with invalid_target.
+12. First refresh rotates the refresh token.
+13. Immediate reuse of the previous refresh token returns the same rotated token within the grace window.
+14. OAuth consent exists in PostgreSQL after approval.
+
+Previously preserved assertions
+1. RFC 9728 protected resource metadata and 401 WWW-Authenticate challenge.
+2. CIMD discovery uses injected transport and MCP 2026-07-28 validation.
+3. Wrong issuer/audience and absent scope fail closed.
+4. Opaque refresh/upstream token is never passed through.
+5. Authorization and Cookie headers are removed before MCP dispatch; token value is redacted.
+6. Legacy transport is rejected; modern stateless requests use fresh servers.
+
+Compatibility evidence
+- Direct TypeScript composition still fails structurally inside OAuth provider OpenAPI parameter types.
+- Approved fallback active: Node-loadable ESM runtime modules plus narrow TypeScript declarations.
+- Physical `.mjs` imports are verified by `pnpm probe:node`; no source-only `.js` specifier remains.
+- No unsafe cast, @ts-ignore, @ts-expect-error, skip of the test, or warning suppression was added.
+- Installed dependency graph emits no peer warning.
+
+Not claimed as tested
+1. Refresh reuse after the grace window.
+2. DPoP, revocation, or opaque-token introspection.
+3. Production-hardened CIMD network transport.
+4. Product UI, tenancy, RLS, deploy, DNS, or remote repository.
+
+Verdict: GO for the technical P0.2b spike; cross-review P2 corrected, no P0/P1 open.

@@ -1,0 +1,33 @@
+{
+  "name": "@backlog-syntax/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/server.ts",
+    "openapi:check": "tsx scripts/generate-openapi.ts --check",
+    "openapi:generate": "tsx scripts/generate-openapi.ts",
+    "start": "node dist/src/server.js",
+    "test": "vitest run",
+    "typecheck": "pnpm --filter @backlog-syntax/contracts build && tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@better-auth/cimd": "1.7.2",
+    "@better-auth/mcp": "1.7.2",
+    "@backlog-syntax/contracts": "workspace:*",
+    "@hono/node-server": "2.1.1",
+    "@hono/zod-openapi": "1.6.1",
+    "@modelcontextprotocol/server": "2.0.0",
+    "@scalar/hono-api-reference": "0.12.0",
+    "better-auth": "1.7.2",
+    "hono": "4.13.5",
+    "jose": "6.2.3",
+    "pg": "8.23.0",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1"
+  }
+}

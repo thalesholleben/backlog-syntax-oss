@@ -1,0 +1,534 @@
+@import "tailwindcss";
+
+/* ============================================================================
+   Tokens. A paleta vem do quadro de referência (Backlog.html): fundo de papel,
+   tinta quase preta, um único acento ácido e quatro cores de status.
+
+   Três temas possíveis: claro, escuro e o do sistema. A escolha explícita marca
+   `data-tema` no <html>; sem escolha, vale `prefers-color-scheme`. Por isso todo
+   token nasce no `:root` claro e é redefinido duas vezes, uma para cada caminho.
+   ============================================================================ */
+
+:root {
+  color-scheme: light;
+
+  --background: #e9eae6;
+  --surface: #ffffff;
+  --panel: #f2f3ef;
+  --line: #e3e4df;
+  --line-soft: #edeee9;
+  --line-strong: #d2d4cd;
+
+  --foreground: #121212;
+  --muted: #6e7069;
+  --faint: #757770;
+
+  /* Superfície do quadro. No claro ela acompanha o papel; no escuro vira o deck. */
+  --ink: #ffffff;
+  --ink-2: #f4f5f1;
+  --ink-3: #edeee9;
+  --ink-hover: #ebece6;
+  --ink-chip: rgb(18 18 18 / 7%);
+  --ink-sheet: #ffffff;
+  --ink-line: #e3e4df;
+  --ink-foreground: #121212;
+  --ink-muted: #6e7069;
+  --ink-faint: #757770;
+  --ink-focus: #121212;
+  --ink-drop: rgb(196 232 40 / 22%);
+
+  /* Botão sólido e marca: escuros nos dois temas, invertem juntos. */
+  --contrast: #121212;
+  --contrast-foreground: #f3f3f0;
+  --contrast-hover: #000000;
+
+  --accent: #dfff4f;
+  --accent-foreground: #121212;
+
+  --danger: #b3261e;
+  --danger-foreground: #ffffff;
+
+  --status-open: #3b82f6;
+  --status-progress: #8b5cf6;
+  --status-blocked: #ec4899;
+  --status-done: #10b981;
+  --status-open-ink: #2563eb;
+  --status-progress-ink: #7c3aed;
+  --status-blocked-ink: #db2777;
+  --status-done-ink: #059669;
+  --status-done-soft: #d9f7e9;
+  --warn: #f5a623;
+
+  /* Tarefa parada tempo demais. */
+  --stale-bg: #fdf2f8;
+  --stale-line: #fbcfe8;
+  --stale-ink: #db2777;
+
+  /* Quem carrega a tarefa: pessoa, agente ou ninguém ainda. */
+  --owner-human: #e4784b;
+  --owner-agent: #6366f1;
+  --owner-free: #9b9d95;
+
+  --focus-ring: rgba(0, 0, 0, 0.1);
+  --radius-card: 1.5rem;
+  --radius-panel: 1.125rem;
+  --radius-control: 0.875rem;
+  --shadow-card: 0 1px 2px rgb(18 18 18 / 4%), 0 18px 38px -24px rgb(18 18 18 / 28%);
+  --shadow-hover: 0 2px 6px rgb(18 18 18 / 6%), 0 16px 32px -14px rgb(18 18 18 / 28%);
+  --shadow-deck: 0 1px 2px rgb(18 18 18 / 4%), 0 8px 24px -12px rgb(18 18 18 / 16%);
+  --shadow-pop: 0 2px 4px rgb(18 18 18 / 8%), 0 30px 80px -24px rgb(18 18 18 / 32%);
+  --glow-1: rgba(223, 255, 79, 0.28);
+  --glow-2: rgba(120, 160, 255, 0.14);
+  --syntax-logo-black-opacity: 1;
+  --syntax-logo-white-opacity: 0;
+}
+
+/* O escuro do sistema, válido só enquanto o usuário não escolheu o claro à mão. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) {
+    color-scheme: dark;
+
+    --background: #0a0a0a;
+    --surface: #171717;
+    --panel: #212121;
+    --line: #292929;
+    --line-soft: #232323;
+    --line-strong: #3c3c3c;
+
+    --foreground: #f3f3f0;
+    --muted: #a0a29a;
+    --faint: #8a8c84;
+
+    --ink: #151515;
+    --ink-2: #212121;
+    --ink-3: #2c2c2c;
+    --ink-hover: #2b2b2b;
+    --ink-chip: rgb(255 255 255 / 9%);
+    --ink-sheet: #151515;
+    --ink-line: #333333;
+    --ink-foreground: #f3f3f0;
+    --ink-muted: #a0a29a;
+    --ink-faint: #8a8c84;
+    --ink-focus: #dfff4f;
+    --ink-drop: rgb(223 255 79 / 12%);
+
+    --contrast: #f3f3f0;
+    --contrast-foreground: #121212;
+    --contrast-hover: #ffffff;
+
+    --danger: #ff6b5e;
+    --danger-foreground: #121212;
+
+    --status-open-ink: #84affc;
+    --status-progress-ink: #bca5fb;
+    --status-blocked-ink: #f8a4cc;
+    --status-done-ink: #5ddcaf;
+    --status-done-soft: rgb(16 185 129 / 18%);
+    --warn: #f0b44e;
+
+    --stale-bg: rgb(236 72 153 / 16%);
+    --stale-line: rgb(236 72 153 / 36%);
+    --stale-ink: #f8a4cc;
+
+    --owner-free: #75776f;
+
+    --focus-ring: rgba(255, 255, 255, 0.1);
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 45%), 0 18px 38px -24px rgb(0 0 0 / 85%);
+    --shadow-hover: 0 2px 6px rgb(0 0 0 / 50%), 0 18px 36px -16px rgb(0 0 0 / 90%);
+    --shadow-deck: 0 2px 6px rgb(0 0 0 / 50%), 0 26px 60px -30px rgb(0 0 0 / 90%);
+    --shadow-pop: 0 30px 80px rgb(0 0 0 / 70%);
+    --glow-1: rgba(223, 255, 79, 0.1);
+    --glow-2: rgba(120, 160, 255, 0.08);
+    --syntax-logo-black-opacity: 0;
+    --syntax-logo-white-opacity: 1;
+  }
+}
+
+/* O escuro escolhido à mão. Repete o bloco acima porque um seletor não pode
+   herdar de uma media query: sem isto, o botão só funcionaria em um sentido. */
+:root[data-tema="escuro"] {
+  color-scheme: dark;
+
+  --background: #0a0a0a;
+  --surface: #171717;
+  --panel: #212121;
+  --line: #292929;
+  --line-soft: #232323;
+  --line-strong: #3c3c3c;
+
+  --foreground: #f3f3f0;
+  --muted: #a0a29a;
+  --faint: #8a8c84;
+
+  --ink: #151515;
+  --ink-2: #212121;
+  --ink-3: #2c2c2c;
+  --ink-hover: #2b2b2b;
+  --ink-chip: rgb(255 255 255 / 9%);
+  --ink-sheet: #151515;
+  --ink-line: #333333;
+  --ink-foreground: #f3f3f0;
+  --ink-muted: #a0a29a;
+  --ink-faint: #8a8c84;
+  --ink-focus: #dfff4f;
+  --ink-drop: rgb(223 255 79 / 12%);
+
+  --contrast: #f3f3f0;
+  --contrast-foreground: #121212;
+  --contrast-hover: #ffffff;
+
+  --danger: #ff6b5e;
+  --danger-foreground: #121212;
+
+  --status-open-ink: #84affc;
+  --status-progress-ink: #bca5fb;
+  --status-blocked-ink: #f8a4cc;
+  --status-done-ink: #5ddcaf;
+  --status-done-soft: rgb(16 185 129 / 18%);
+  --warn: #f0b44e;
+
+  --stale-bg: rgb(236 72 153 / 16%);
+  --stale-line: rgb(236 72 153 / 36%);
+  --stale-ink: #f8a4cc;
+
+  --owner-free: #75776f;
+
+  --focus-ring: rgba(255, 255, 255, 0.1);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 45%), 0 18px 38px -24px rgb(0 0 0 / 85%);
+  --shadow-hover: 0 2px 6px rgb(0 0 0 / 50%), 0 18px 36px -16px rgb(0 0 0 / 90%);
+  --shadow-deck: 0 2px 6px rgb(0 0 0 / 50%), 0 26px 60px -30px rgb(0 0 0 / 90%);
+  --shadow-pop: 0 30px 80px rgb(0 0 0 / 70%);
+  --glow-1: rgba(223, 255, 79, 0.1);
+  --glow-2: rgba(120, 160, 255, 0.08);
+  --syntax-logo-black-opacity: 0;
+  --syntax-logo-white-opacity: 1;
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-panel: var(--panel);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-line-strong: var(--line-strong);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-hover: var(--ink-hover);
+  --color-ink-chip: var(--ink-chip);
+  --color-ink-sheet: var(--ink-sheet);
+  --color-ink-line: var(--ink-line);
+  --color-ink-foreground: var(--ink-foreground);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+
+  --color-contrast: var(--contrast);
+  --color-contrast-foreground: var(--contrast-foreground);
+  --color-contrast-hover: var(--contrast-hover);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+
+  --color-status-open: var(--status-open);
+  --color-status-progress: var(--status-progress);
+  --color-status-blocked: var(--status-blocked);
+  --color-status-done: var(--status-done);
+  --color-status-done-ink: var(--status-done-ink);
+  --color-status-done-soft: var(--status-done-soft);
+  --color-warn: var(--warn);
+
+  --color-stale-bg: var(--stale-bg);
+  --color-stale-line: var(--stale-line);
+  --color-stale-ink: var(--stale-ink);
+
+  --color-owner-human: var(--owner-human);
+  --color-owner-agent: var(--owner-agent);
+  --color-owner-free: var(--owner-free);
+
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  --radius-card: var(--radius-card);
+  --radius-panel: var(--radius-panel);
+  --radius-control: var(--radius-control);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-hover: var(--shadow-hover);
+  --shadow-deck: var(--shadow-deck);
+  --shadow-pop: var(--shadow-pop);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-width: 20rem;
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+/* Capa editorial: master 1920px alinhado à coluna 1152px, copy em meia coluna.
+   O mobile tem outra composição, em fluxo antes do texto, sem reordenação CSS. */
+.bl-home-hero {
+  --background: #101010;
+  --foreground: #f3f3f0;
+  --muted: #c2c4bb;
+  --faint: #a0a299;
+  --line: rgb(255 255 255 / 18%);
+  --surface: rgb(255 255 255 / 6%);
+  --panel: rgb(255 255 255 / 12%);
+  /* Os aliases de @theme vêm resolvidos da raiz; redefinir nesta superfície escura. */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-surface: var(--surface);
+  --color-panel: var(--panel);
+  position: relative;
+  isolation: isolate;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.bl-home-hero picture {
+  position: relative;
+  display: block;
+  height: clamp(16rem, 80vw, 36rem);
+}
+
+.bl-home-hero picture::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(0deg, var(--background), transparent 26%);
+}
+
+.bl-home-hero img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+@media (min-width: 1024px) {
+  .bl-home-hero picture {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+  }
+
+  .bl-home-hero::before {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    content: "";
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      rgb(16 16 16 / 96%) 0%,
+      rgb(16 16 16 / 90%) 32%,
+      rgb(16 16 16 / 76%) 46%,
+      rgb(16 16 16 / 12%) 60%,
+      transparent 76%,
+      rgb(16 16 16 / 75%) 100%
+    );
+  }
+}
+
+/* Auréola de fundo do quadro: duas luzes muito fracas atrás de tudo. */
+.bl-glow {
+  position: relative;
+  isolation: isolate;
+}
+
+.bl-glow::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(760px 420px at 88% -8%, var(--glow-1), transparent 62%),
+    radial-gradient(820px 460px at 6% -10%, var(--glow-2), transparent 60%);
+}
+
+/* Backdrop and entry animation for native <dialog>-based drawers and modals. */
+dialog.bl-dialog {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  max-width: none;
+  max-height: none;
+  overscroll-behavior: contain;
+}
+
+dialog.bl-dialog::backdrop {
+  background: rgb(18 18 18 / 45%);
+  backdrop-filter: blur(3px);
+  animation: bl-fade-in 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes bl-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes bl-slide-in-right {
+  from {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+}
+
+@keyframes bl-rise-in {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+}
+
+/* Barra de status da lateral: cresce de baixo para cima ao entrar na tela. */
+@keyframes bl-grow {
+  from {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+}
+
+.bl-bar {
+  transform-origin: bottom;
+  animation: bl-grow 550ms cubic-bezier(0.2, 0.9, 0.25, 1.2) both;
+}
+
+/* Sanfona do card: de 0fr para 1fr anima sem precisar medir a altura no JS. */
+.bl-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 260ms ease;
+}
+
+.bl-collapse[data-aberto="true"] {
+  grid-template-rows: 1fr;
+}
+
+.bl-collapse > * {
+  overflow: hidden;
+  min-height: 0;
+  /* `visibility` sai na hora ao abrir e só entra quando a animação de fechar
+     termina, para o conteúdo não continuar clicável enquanto a linha é 0fr. */
+  visibility: hidden;
+  transition: visibility 0s linear 260ms;
+}
+
+.bl-collapse[data-aberto="true"] > * {
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+/* Revelação por scroll da página pública. Sem JS, tudo nasce visível. */
+html[data-js] .bl-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 700ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 700ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+html[data-js] .bl-reveal[data-in] {
+  opacity: 1;
+  transform: none;
+}
+
+.bl-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.bl-scroll::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.bl-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.bl-scroll::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 99px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  html[data-js] .bl-reveal,
+  html[data-js] .bl-reveal[data-in] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+  }
+}

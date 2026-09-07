@@ -1,0 +1,54 @@
+name: backlog-syntax-db-test
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: backlog_syntax_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres-test-only
+      BACKLOG_OWNER_PASSWORD: owner-test-only
+      BACKLOG_AUTH_PASSWORD: auth-test-only
+      BACKLOG_APP_PASSWORD: app-test-only
+    tmpfs:
+      - /var/lib/postgresql
+    volumes:
+      - ./docker/init.sh:/docker-entrypoint-initdb.d/00-init.sh:ro
+      - ./migrations:/migrations:ro
+      - ./seeds:/seeds:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'test -f "$${PGDATA}/.backlog-init-complete" && pg_isready -h 127.0.0.1 -U postgres -d backlog_syntax_test',
+        ]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    networks:
+      - db_test
+
+  rls-test:
+    image: postgres:18-alpine
+    environment:
+      PGHOST: db
+      PGDATABASE: backlog_syntax_test
+      POSTGRES_PASSWORD: postgres-test-only
+      BACKLOG_OWNER_PASSWORD: owner-test-only
+      BACKLOG_AUTH_PASSWORD: auth-test-only
+      BACKLOG_APP_PASSWORD: app-test-only
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations:ro
+      - ./seeds:/seeds:ro
+      - ./tests:/tests:ro
+    entrypoint: ["/bin/sh", "/tests/run.sh"]
+    networks:
+      - db_test
+
+networks:
+  db_test:
+    internal: true

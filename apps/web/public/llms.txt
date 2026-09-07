@@ -1,0 +1,11 @@
+# Backlog Syntax
+
+> Backlog open source e multi-tenant para coordenar pessoas e agentes por REST, OpenAPI e MCP.
+
+## Main pages
+- /: product status and architecture summary
+- /documentacao: public API, remote MCP, WebMCP, authorization and concurrency guide
+- /transparencia: current product and data-processing status
+- /privacidade: privacy notice, providers and data-subject rights
+
+This file is a low-cost discovery aid. It does not replace the website, README, or public documentation.

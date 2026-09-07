@@ -1,0 +1,27 @@
+.firecrawl/
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+coverage/
+*.log
+.next/
+.turbo/
+.test-artifacts/
+*.tsbuildinfo
+openapi.generated.json
+test-results/
+playwright-report/
+blob-report/
+
+# Private planning, credentials and database exports
+docs/plans/
+docs/evidence/production-*.md
+docs/evidence/hero-release-*.md
+*.pem
+*.key
+*.p12
+*.pfx
+*.dump
+*.sql.gz

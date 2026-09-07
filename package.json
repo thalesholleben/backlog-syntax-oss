@@ -1,0 +1,39 @@
+{
+  "name": "backlog-syntax",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Secure, multi-tenant, agent-native backlog with REST, OpenAPI and MCP.",
+  "license": "MIT",
+  "author": "thalesholleben",
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "packageManager": "pnpm@11.24.0",
+  "scripts": {
+    "build": "pnpm build:packages && pnpm --filter @backlog-syntax/api build && pnpm --filter @backlog-syntax/web build",
+    "build:packages": "pnpm --filter @backlog-syntax/contracts build && pnpm --filter @backlog-syntax/db build",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm build && pnpm test && pnpm openapi:check && pnpm authorship:check",
+    "dev": "pnpm --parallel --filter @backlog-syntax/api --filter @backlog-syntax/web dev",
+    "docker:down": "docker compose down --volumes --remove-orphans",
+    "docker:test": "pnpm build:packages && node scripts/docker-test.mjs",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "lint": "biome lint .",
+    "og:render": "node scripts/render-og.mjs",
+    "openapi:generate": "pnpm build:packages && pnpm --filter @backlog-syntax/api openapi:generate",
+    "openapi:check": "pnpm build:packages && pnpm --filter @backlog-syntax/api openapi:check",
+    "authorship:check": "node scripts/check-authorship.mjs",
+    "test": "pnpm build:packages && pnpm --recursive --if-present test",
+    "test:integration": "node scripts/product-integration-test.mjs",
+    "test:rls": "pnpm --filter @backlog-syntax/db test:rls",
+    "typecheck": "pnpm build:packages && pnpm --filter @backlog-syntax/api typecheck && pnpm --filter @backlog-syntax/web typecheck"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.11",
+    "@types/node": "26.4.0",
+    "tsx": "4.23.13",
+    "typescript": "7.0.2",
+    "vitest": "4.1.11"
+  }
+}

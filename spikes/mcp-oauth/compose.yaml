@@ -1,0 +1,21 @@
+name: backlog-syntax-mcp-oauth-spike
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: backlog_syntax_oauth_test
+      POSTGRES_USER: backlog_test
+      POSTGRES_PASSWORD: local_ephemeral_only
+    ports:
+      - "127.0.0.1:55432:5432"
+    tmpfs:
+      - /var/lib/postgresql:rw,noexec,nosuid,size=512m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U backlog_test -d backlog_syntax_oauth_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    shm_size: 128mb
+    restart: "no"

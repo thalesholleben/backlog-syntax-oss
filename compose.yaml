@@ -1,0 +1,109 @@
+name: backlog-syntax
+
+# Production-safe base used by EasyPanel. Local automation supplies explicit test values through
+# compose.test.yaml and the process environment; secrets intentionally have no public defaults.
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-backlog_syntax}
+      POSTGRES_USER: ${POSTGRES_SUPERUSER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?POSTGRES_SUPERUSER_PASSWORD is required}
+      BACKLOG_OWNER_PASSWORD: ${BACKLOG_OWNER_PASSWORD:?BACKLOG_OWNER_PASSWORD is required}
+      BACKLOG_AUTH_PASSWORD: ${BACKLOG_AUTH_PASSWORD:?BACKLOG_AUTH_PASSWORD is required}
+      BACKLOG_APP_PASSWORD: ${BACKLOG_APP_PASSWORD:?BACKLOG_APP_PASSWORD is required}
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-55432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./packages/db/docker/init.sh:/docker-entrypoint-initdb.d/00-init.sh:ro
+      - ./packages/db/migrations:/migrations:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'test -f "$${PGDATA}/.backlog-init-complete" && pg_isready -h 127.0.0.1 -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"',
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    networks: [backend]
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      NODE_ENV: production
+      API_HOST: 0.0.0.0
+      API_PORT: 8787
+      WEB_ORIGIN: ${WEB_ORIGIN:?WEB_ORIGIN is required}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:?PUBLIC_API_URL is required}
+      AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET is required}
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-__Host-backlog_session}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      AUTH_DATABASE_URL: postgresql://backlog_auth:${BACKLOG_AUTH_PASSWORD:?BACKLOG_AUTH_PASSWORD is required}@db:5432/${POSTGRES_DB:-backlog_syntax}
+      APP_DATABASE_URL: postgresql://backlog_app:${BACKLOG_APP_PASSWORD:?BACKLOG_APP_PASSWORD is required}@db:5432/${POSTGRES_DB:-backlog_syntax}
+      DATABASE_SSL: "false"
+      DB_POOL_MAX: ${DB_POOL_MAX:-5}
+      DB_CONNECTION_TIMEOUT_MS: ${DB_CONNECTION_TIMEOUT_MS:-3000}
+      DB_STATEMENT_TIMEOUT_MS: ${DB_STATEMENT_TIMEOUT_MS:-5000}
+      HOUSEKEEPING_ENABLED: ${HOUSEKEEPING_ENABLED:-true}
+      HOUSEKEEPING_INTERVAL_MS: ${HOUSEKEEPING_INTERVAL_MS:-60000}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: on-failure:3
+    ports:
+      - "127.0.0.1:${API_HOST_PORT:-8787}:8787"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8787/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    init: true
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    networks: [backend, frontend]
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:?PUBLIC_API_URL is required}
+        NEXT_PUBLIC_GOOGLE_AUTH_ENABLED: ${NEXT_PUBLIC_GOOGLE_AUTH_ENABLED:-false}
+        PUBLIC_WEB_URL: ${WEB_ORIGIN:?WEB_ORIGIN is required}
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${WEB_HOST_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    init: true
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    networks: [frontend]
+
+networks:
+  backend:
+    driver: bridge
+  frontend:
+    driver: bridge
+
+volumes:
+  postgres_data:
