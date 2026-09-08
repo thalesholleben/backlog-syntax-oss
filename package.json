@@ -13,7 +13,7 @@
   "scripts": {
     "build": "pnpm build:packages && pnpm --filter @backlog-syntax/api build && pnpm --filter @backlog-syntax/web build",
     "build:packages": "pnpm --filter @backlog-syntax/contracts build && pnpm --filter @backlog-syntax/db build",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm build && pnpm test && pnpm openapi:check && pnpm authorship:check",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm build && pnpm test && pnpm openapi:check && pnpm skills:check && pnpm authorship:check",
     "dev": "pnpm --parallel --filter @backlog-syntax/api --filter @backlog-syntax/web dev",
     "docker:down": "docker compose down --volumes --remove-orphans",
     "docker:test": "pnpm build:packages && node scripts/docker-test.mjs",
@@ -27,7 +27,9 @@
     "test": "pnpm build:packages && pnpm --recursive --if-present test",
     "test:integration": "node scripts/product-integration-test.mjs",
     "test:rls": "pnpm --filter @backlog-syntax/db test:rls",
-    "typecheck": "pnpm build:packages && pnpm --filter @backlog-syntax/api typecheck && pnpm --filter @backlog-syntax/web typecheck"
+    "typecheck": "pnpm build:packages && pnpm --filter @backlog-syntax/api typecheck && pnpm --filter @backlog-syntax/web typecheck",
+    "skills:check": "node scripts/check-skills.mjs",
+    "skills:install": "node scripts/install-skill.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.11",

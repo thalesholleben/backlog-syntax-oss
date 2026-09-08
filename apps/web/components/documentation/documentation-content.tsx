@@ -3,7 +3,8 @@
 import type { Translator } from "@/lib/i18n/translate";
 
 import { useI18n } from "@/lib/i18n/provider";
-import { Bot, Braces, ExternalLink, Globe2, ShieldCheck } from "lucide-react";
+import { site } from "@/lib/site";
+import { Bot, Braces, ExternalLink, Globe2, Puzzle, ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 
 const surfaces = (t: Translator) =>
@@ -93,6 +94,52 @@ export function DocumentationContent({
           </div>
         </div>
       </header>
+
+      {/* Placed before the three surfaces on purpose: connecting MCP only hands the agent
+          the tools, and without the skill it usually ignores the service or invents a
+          workspace id. Someone who reads only the first block still learns that. */}
+      <section className="mt-3 rounded-card border border-accent bg-surface p-5 shadow-card sm:p-7">
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground">
+            <Puzzle aria-hidden="true" className="size-[18px]" />
+          </span>
+          <div className="min-w-0">
+            <p className="font-mono text-[8.5px] font-bold uppercase tracking-[0.13em] text-faint">
+              {t("Comece por aqui · Claude Code e Codex")}
+            </p>
+            <h2 className="mt-1 text-xl font-extrabold tracking-[-0.03em]">
+              {t("Instale a skill antes de conectar")}
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+              {t(
+                "Conectar o MCP entrega as ferramentas ao agente, mas é a skill que diz a ele quando usá-las, em qual workspace escrever, como evitar tarefa duplicada e que registrar uma pendência não autoriza executá-la. Sem ela, o agente conectado costuma ignorar o serviço.",
+              )}
+            </p>
+          </div>
+        </div>
+        <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(320px,.9fr)]">
+          <div>
+            <h3 className="text-sm font-extrabold">{t("No Claude Code, sem clonar nada")}</h3>
+            <p className="mt-2 text-xs leading-5 text-muted">
+              {t(
+                "No Codex, ou para instalar a partir de um clone do repositório, use o script de instalação descrito no README das skills.",
+              )}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <a
+                href={`${site.github}/tree/main/skills`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-10 items-center gap-2 rounded-full bg-contrast px-4 text-xs font-bold text-contrast-foreground"
+              >
+                {t("Skills e instalação")} <ExternalLink aria-hidden="true" className="size-3.5" />
+              </a>
+            </div>
+          </div>
+          <CodeBlock>{`/plugin marketplace add thalesholleben/backlog-syntax-oss
+/plugin install backlog-cloud@backlog-syntax`}</CodeBlock>
+        </div>
+      </section>
 
       <nav
         aria-label={t("Nesta documentação")}

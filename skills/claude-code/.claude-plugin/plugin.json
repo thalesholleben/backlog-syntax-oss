@@ -1,0 +1,8 @@
+{
+  "name": "backlog-cloud",
+  "description": "Backlog Syntax in the cloud as an agent's task backlog. Record, find and update tasks over the remote MCP server or the REST API, with workspace selection, duplicate checks, leases and optimistic concurrency. Recording a task never authorizes executing it.",
+  "author": {
+    "name": "Thales Gomes"
+  },
+  "keywords": ["backlog", "tasks", "mcp", "agents", "syntaxlab"]
+}

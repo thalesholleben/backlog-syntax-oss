@@ -43,6 +43,14 @@ distinguir a versão publicada do código que ainda aguarda PR.
 - [Guia de integração](https://backlog.syntaxlab.com.br/documentacao): documentação pública em boxed e versão contextual dentro do workspace.
 - [Referência interativa da API](https://backlog-api.syntaxlab.com.br/docs) e [OpenAPI JSON](https://backlog-api.syntaxlab.com.br/openapi.json): contratos REST para clientes e agentes.
 - MCP remoto usa `https://backlog-api.syntaxlab.com.br/mcp`. WebMCP é um recurso opcional do navegador, não um requisito para usar o app.
+- **[Skill de agente](skills/README.md): instale antes de esperar que um agente use o serviço.** Conectar o MCP dá as ferramentas ao agente; a skill é o que diz a ele quando usá-las, em qual workspace escrever e que registrar uma tarefa não autoriza executá-la. No Claude Code são duas linhas, sem clonar:
+
+```
+/plugin marketplace add thalesholleben/backlog-syntax-oss
+/plugin install backlog-cloud@backlog-syntax
+```
+
+  No Codex, ou a partir de um clone, rode `node scripts/install-skill.mjs codex`.
 
 ## Visão do produto
 
@@ -135,6 +143,7 @@ apps/api            Adaptadores REST/OpenAPI e MCP em Hono
 packages/contracts  Schemas, erros, tools e cenários compartilhados
 packages/db         Drizzle, migrations, roles e testes de RLS
 docs                Arquitetura, features, privacidade e operação
+skills              Skills de agente para Claude Code e Codex, instaláveis daqui
 spikes              Experimentos executáveis para reduzir riscos
 ```
 
@@ -145,6 +154,7 @@ spikes              Experimentos executáveis para reduzir riscos
 - [Site público, documentação e hero](docs/features/public-web.md)
 - [Decisões de arquitetura](docs/architecture/README.md)
 - [Escopo do produto](docs/features/product-scope.md)
+- [Skills de agente e como instalar](skills/README.md)
 - [Baseline LGPD](docs/privacy/README.md)
 - [Runbook de desenvolvimento local](docs/runbooks/local-development.md)
 - [Guia de contribuição](CONTRIBUTING.md)
