@@ -68,7 +68,7 @@ for (const locale of ["pt-BR", "en"] as const) {
     await page.goto(copy("/", "/en"));
     await page
       .getByRole("link", {
-        name: copy("Entrar / Criar conta", "Sign in / Create account"),
+        name: "Dashboard",
         exact: true,
       })
       .first()
@@ -99,7 +99,7 @@ for (const locale of ["pt-BR", "en"] as const) {
       .click();
     await page
       .getByRole("link", {
-        name: copy("Entrar / Criar conta", "Sign in / Create account"),
+        name: "Dashboard",
         exact: true,
       })
       .first()
