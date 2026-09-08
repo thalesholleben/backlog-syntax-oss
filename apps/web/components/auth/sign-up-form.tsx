@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { legalNoticeVersion } from "@/lib/site";
 import { PasswordInput } from "@/components/ui/password-input";
 import { authClient } from "@/lib/auth-client";
 
@@ -67,7 +68,7 @@ export function SignUpForm() {
         password: parsed.data.password,
         termsAcceptedAt: new Date(),
         privacyNoticeAcceptedAt: new Date(),
-        legalNoticeVersion: "2026-09-05",
+        legalNoticeVersion,
       });
       if (result.error) {
         setFormError(t("Não foi possível criar a conta."));
