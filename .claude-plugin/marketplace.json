@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "backlog-syntax",
+  "description": "Skills to let a coding agent use Backlog Syntax as its task backlog, over the remote MCP server or the REST API.",
+  "owner": {
+    "name": "Syntax Lab",
+    "email": "contato@syntaxlab.com.br"
+  },
+  "plugins": [
+    {
+      "name": "backlog-cloud",
+      "description": "Teaches an agent to record, find and update tasks in the hosted Backlog Syntax at backlog.syntaxlab.com.br, with workspace selection, duplicate checks, leases and optimistic concurrency. Connect the MCP server or a service-account token separately.",
+      "author": {
+        "name": "Thales Gomes"
+      },
+      "category": "productivity",
+      "source": "./skills/claude-code",
+      "homepage": "https://github.com/thalesholleben/backlog-syntax-oss/tree/main/skills"
+    }
+  ]
+}

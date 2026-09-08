@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backlog Cloud"
+  short_description: "Pendências do Backlog Syntax por MCP ou API"
+  default_prompt: "Use $backlog-cloud para registrar e consultar pendências no Backlog Syntax."

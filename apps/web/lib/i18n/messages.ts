@@ -296,6 +296,14 @@ export const english = {
   Use: "Use",
   "nas mutações.": "for mutations.",
   "Referência interativa": "Interactive reference",
+  "Comece por aqui · Claude Code e Codex": "Start here · Claude Code and Codex",
+  "Instale a skill antes de conectar": "Install the skill before connecting",
+  "Conectar o MCP entrega as ferramentas ao agente, mas é a skill que diz a ele quando usá-las, em qual workspace escrever, como evitar tarefa duplicada e que registrar uma pendência não autoriza executá-la. Sem ela, o agente conectado costuma ignorar o serviço.":
+    "Connecting MCP hands the agent the tools, but the skill is what tells it when to use them, which workspace to write to, how to avoid duplicating a task, and that recording a pending item does not authorize executing it. Without it, a connected agent usually ignores the service.",
+  "No Claude Code, sem clonar nada": "In Claude Code, with no clone",
+  "No Codex, ou para instalar a partir de um clone do repositório, use o script de instalação descrito no README das skills.":
+    "For Codex, or to install from a clone of the repository, use the install script described in the skills README.",
+  "Skills e instalação": "Skills and install",
   "Conectar um cliente": "Connect a client",
   "Adicione o endpoint remoto abaixo em um cliente MCP compatível com OAuth. O fluxo usa PKCE, mostra os escopos antes do consentimento e não reaproveita a sessão do navegador.":
     "Add the remote endpoint below to an OAuth-compatible MCP client. The flow uses PKCE, shows scopes before consent and issues separate authorization for the client.",
