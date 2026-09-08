@@ -15,9 +15,12 @@ type LegalPageProps = {
   description: string;
   path: string;
   sections: readonly LegalSection[];
+  /** Already translated label for the revision of this page. Each legal page is revised
+   *  on its own, so a page that has not changed keeps the launch date. */
+  version?: string;
 };
 
-export function LegalPage({ title, description, path, sections }: LegalPageProps) {
+export function LegalPage({ title, description, path, sections, version }: LegalPageProps) {
   const { t, href } = useI18n();
 
   const breadcrumbSchema = {
@@ -43,7 +46,7 @@ export function LegalPage({ title, description, path, sections }: LegalPageProps
         <span aria-current="page">{title}</span>
       </nav>
       <p className="font-mono text-xs font-bold uppercase tracking-[0.18em] text-muted">
-        {t("Versão de lançamento · 5 de setembro de 2026")}
+        {version ?? t("Versão de lançamento · 5 de setembro de 2026")}
       </p>
       <h1 className="mt-3 font-display text-[clamp(2.5rem,8vw,5rem)] font-bold leading-[0.95] tracking-[-0.055em]">
         {title}

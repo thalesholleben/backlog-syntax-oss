@@ -9,8 +9,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { authClient, useSession } from "@/lib/auth-client";
-
-const LEGAL_NOTICE_VERSION = "2026-09-05";
+import { legalNoticeVersion } from "@/lib/site";
 
 export function LegalAcceptanceForm() {
   const { t } = useI18n();
@@ -42,7 +41,7 @@ export function LegalAcceptanceForm() {
       const result = await authClient.updateUser({
         termsAcceptedAt: acceptedAt,
         privacyNoticeAcceptedAt: acceptedAt,
-        legalNoticeVersion: LEGAL_NOTICE_VERSION,
+        legalNoticeVersion,
       });
       if (result.error) {
         setError(t("Não foi possível registrar o aceite. Tente novamente."));

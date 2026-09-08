@@ -21,6 +21,12 @@ export const site = {
   },
 } as const;
 
+// One identifier for the legal bundle a user accepts: terms plus privacy notice. Bump it
+// whenever either text changes materially, so an acceptance record always identifies a
+// single document. Sign-in gates on the field being present, not on it matching this
+// value, so a clarifying revision never forces existing users to accept again.
+export const legalNoticeVersion = "2026-09-08";
+
 export const socialImage = {
   path: "/brand/backlog-og.png",
   width: 1200,
