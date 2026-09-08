@@ -1,7 +1,7 @@
 /** Shared UI translations. User-authored content is never translated. */
 export const english = {
   "Criar conta": "Create account",
-  "Entrar / Criar conta": "Sign in / Create account",
+  "Entrar / Criar conta": "Log In / Sign Up",
   Entrar: "Sign in",
   "Recuperar senha": "Forgot password",
   "Redefinir senha": "Reset password",
