@@ -28,6 +28,11 @@ direto, arquivos do autor nem do CLI de backlog local.
 - Se faltar conexão, leia [references/setup.md](references/setup.md).
   Configurar a conexão depende de o usuário pedir configuração; não instale
   nada por causa de um pedido de consulta.
+- Para um agente que monitora um projeto e executa o que chega, leia
+  [references/monitors.md](references/monitors.md). Ele descreve os dois padroes de
+  monitor, a rota de fila com limite de uma requisicao por minuto, e a unica situacao
+  em que registrar uma tarefa autoriza executa-la: um projeto designado como fila
+  autonoma. Fora dele a regra desta skill continua valendo.
 - Para scripts ou quando MCP estiver indisponível e já houver um token REST
   autorizado, leia [references/api.md](references/api.md). API e MCP têm
   autenticações diferentes. Não troque de identidade durante um claim.

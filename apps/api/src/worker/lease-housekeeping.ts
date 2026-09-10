@@ -18,6 +18,7 @@ export function startLeaseHousekeeping(pool: Pool, intervalMs: number): () => vo
         try {
           await client.query("SELECT private.expire_task_leases()");
           await client.query("SELECT private.purge_expired_idempotency_keys(500)");
+          await client.query("SELECT private.purge_expired_rate_limits()");
         } finally {
           await client.query("SELECT pg_advisory_unlock($1)", [LOCK_KEY]);
         }

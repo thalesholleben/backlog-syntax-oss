@@ -26,6 +26,7 @@ import {
   TaskEventSchema,
   TaskEventListSchema,
   TaskListSchema,
+  TaskQueueSchema,
   TaskSchema,
   TaskStatusSchema,
   UpdateProjectInputSchema,
@@ -41,6 +42,7 @@ import type { Principal } from "../domain/principal.js";
 import type { PostgresProductRepository } from "../infrastructure/postgres-product-repository.js";
 import type { AccountPrivacyService } from "../privacy/account-privacy-service.js";
 import type { AppVariables } from "./app.js";
+import { presentProblem } from "./problem-presenter.js";
 
 interface Dependencies {
   principalResolver: PrincipalResolver;
@@ -55,6 +57,14 @@ const TokenParams = WorkspaceParams.extend({ tokenId: IdentifierSchema });
 const ServiceAccountParams = WorkspaceParams.extend({ serviceAccountId: IdentifierSchema });
 const IdempotencyHeaders = z.object({ "Idempotency-Key": z.string().min(8).max(200) });
 const VersionHeaders = IdempotencyHeaders.extend({ "If-Match": z.string().min(1).max(32) });
+const TASK_QUEUE_BUCKET = "task-queue";
+const TASK_QUEUE_WINDOW_SECONDS = 60;
+
+const RestTaskQueueQuery = z.object({
+  projectId: IdentifierSchema,
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
 const RestTaskListQuery = CursorQuerySchema.extend({
   projectId: IdentifierSchema.optional(),
   status: TaskStatusSchema.optional(),
@@ -264,6 +274,19 @@ function registerDocumentation(app: OpenAPIHono<{ Variables: AppVariables }>): v
       description: "Deletes one project through an idempotent workspace-scoped request.",
       request: { params: ProjectParams, headers: IdempotencyHeaders },
       responses: { 204: { description: "Project deleted" } },
+    },
+    {
+      method: "get",
+      path: "/v1/workspaces/{workspaceId}/task-queue",
+      operationId: "listTaskQueue",
+      summary: "List the execution queue of a project",
+      description:
+        "Returns open, unclaimed tasks of one project as current state, for an agent that polls for work. Rate limited to one request per minute per principal.",
+      request: { params: WorkspaceParams, query: RestTaskQueueQuery },
+      responses: {
+        200: response(TaskQueueSchema, "Queued tasks"),
+        429: { description: "Rate limit exceeded; retry after the advertised delay" },
+      },
     },
     {
       method: "get",
@@ -580,6 +603,32 @@ export function registerProductRoutes(
       { idempotencyKey: idempotencyKey(c.req.raw.headers) },
     );
     return c.body(null, 204);
+  });
+
+  app.get("/v1/workspaces/:workspaceId/task-queue", async (c) => {
+    const p = params(c, WorkspaceParams);
+    const query = parse(RestTaskQueueQuery, c.req.query());
+    const principal = await auth(c);
+    const limit = await dependencies.repository.consumeRateLimit(
+      p.workspaceId,
+      principal,
+      TASK_QUEUE_BUCKET,
+      TASK_QUEUE_WINDOW_SECONDS,
+    );
+    if (!limit.allowed) {
+      c.header("Retry-After", String(limit.retryAfterSeconds));
+      return c.json(
+        presentProblem(
+          new DomainError("rate_limited", 429, "One request per minute per principal"),
+          c.req.path,
+          c.get("traceId"),
+        ),
+        429,
+      );
+    }
+    return c.json({
+      data: await dependencies.repository.listTaskQueue(p.workspaceId, principal, query),
+    });
   });
 
   app.get("/v1/workspaces/:workspaceId/tasks", async (c) => {

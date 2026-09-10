@@ -38,8 +38,8 @@ for (const [path, pathItem] of Object.entries(document.paths ?? {})) {
   }
 }
 
-if (operationCount !== 30) {
-  throw new Error(`Expected 30 OpenAPI operations, found ${operationCount}.`);
+if (operationCount !== 31) {
+  throw new Error(`Expected 31 OpenAPI operations, found ${operationCount}.`);
 }
 
 const generated = `${JSON.stringify(document, null, 2)}\n`;

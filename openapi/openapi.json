@@ -788,6 +788,9 @@
           },
           "claimedBy": {
             "$ref": "#/components/schemas/ActiveTaskClaim"
+          },
+          "createdBy": {
+            "$ref": "#/components/schemas/TaskAuthor"
           }
         },
         "required": [
@@ -806,7 +809,8 @@
           "createdAt",
           "updatedAt",
           "archivedAt",
-          "claimedBy"
+          "claimedBy",
+          "createdBy"
         ],
         "additionalProperties": false
       },
@@ -836,6 +840,29 @@
           "subjectType",
           "subjectId",
           "leaseExpiresAt"
+        ],
+        "additionalProperties": false
+      },
+      "TaskAuthor": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "subjectType": {
+            "type": "string",
+            "enum": [
+              "user",
+              "service_account"
+            ]
+          },
+          "subjectId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "019641a8-8c54-7f6c-8d2f-3fd1eb8b7531"
+          }
+        },
+        "required": [
+          "subjectType",
+          "subjectId"
         ],
         "additionalProperties": false
       },
@@ -964,6 +991,21 @@
         "required": [
           "data",
           "page"
+        ],
+        "additionalProperties": false
+      },
+      "TaskQueue": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Task"
+            }
+          }
+        },
+        "required": [
+          "data"
         ],
         "additionalProperties": false
       },
@@ -2866,6 +2908,139 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "RFC 9457 Problem Details",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/task-queue": {
+      "get": {
+        "operationId": "listTaskQueue",
+        "summary": "List the execution queue of a project",
+        "description": "Returns open, unclaimed tasks of one project as current state, for an agent that polls for work. Rate limited to one request per minute per principal.",
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "019641a8-8c54-7f6c-8d2f-3fd1eb8b7531"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "019641a8-8c54-7f6c-8d2f-3fd1eb8b7531"
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Queued tasks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskQueue"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "RFC 9457 Problem Details",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "RFC 9457 Problem Details",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RFC 9457 Problem Details",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "RFC 9457 Problem Details",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "RFC 9457 Problem Details",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "RFC 9457 Problem Details",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; retry after the advertised delay"
           },
           "500": {
             "description": "RFC 9457 Problem Details",

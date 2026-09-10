@@ -20,6 +20,14 @@ export const ActiveTaskClaimSchema = z
   .strict()
   .openapi("ActiveTaskClaim");
 
+export const TaskAuthorSchema = z
+  .object({
+    subjectType: SubjectTypeSchema,
+    subjectId: IdentifierSchema,
+  })
+  .strict()
+  .openapi("TaskAuthor");
+
 export const TaskSchema = z
   .object({
     id: IdentifierSchema,
@@ -38,6 +46,7 @@ export const TaskSchema = z
     updatedAt: IsoDateTimeSchema,
     archivedAt: IsoDateTimeSchema.nullable(),
     claimedBy: ActiveTaskClaimSchema.nullable(),
+    createdBy: TaskAuthorSchema.nullable(),
   })
   .strict()
   .openapi("Task");
@@ -94,6 +103,21 @@ export const UpdateTaskInputSchema = z
       .strict(),
   })
   .strict();
+
+export const TaskQueueInputSchema = z
+  .object({
+    workspaceId: IdentifierSchema,
+    projectId: IdentifierSchema,
+    limit: z.coerce.number().int().min(1).max(50).default(20),
+  })
+  .strict();
+
+export const TaskQueueSchema = z
+  .object({
+    data: z.array(TaskSchema),
+  })
+  .strict()
+  .openapi("TaskQueue");
 
 const ClaimBaseSchema = z
   .object({
