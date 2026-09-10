@@ -504,4 +504,24 @@ export const english = {
   "Tarefa criada: {0}": "Task created: {0}",
   "Tarefa {0} agendada para {1}": "Task {0} scheduled for {1}",
   "Tarefa {0} removida da agenda": "Task {0} unscheduled",
+  "Já existe um projeto com este identificador. Escolha outro.":
+    "A project already uses this identifier. Choose another one.",
+  "Trocar a senha": "Change password",
+  "Exige a senha atual e encerra suas outras sessões.":
+    "Requires your current password and ends your other sessions.",
+  "Senha atual": "Current password",
+  "Confirmar a nova senha": "Confirm the new password",
+  "Pelo menos 12 caracteres.": "At least 12 characters.",
+  "Informe a senha atual.": "Enter your current password.",
+  "A nova senha precisa ser diferente da atual.":
+    "The new password must be different from the current one.",
+  "A confirmação não confere com a nova senha.":
+    "The confirmation does not match the new password.",
+  "A senha atual não confere.": "That is not your current password.",
+  "Esta conta entra por um provedor externo e não tem senha para trocar.":
+    "This account signs in through an external provider and has no password to change.",
+  "Não foi possível trocar a senha agora. Tente de novo em instantes.":
+    "The password could not be changed right now. Try again in a moment.",
+  "Senha alterada. Suas outras sessões foram encerradas.":
+    "Password changed. Your other sessions were ended.",
 } as const;

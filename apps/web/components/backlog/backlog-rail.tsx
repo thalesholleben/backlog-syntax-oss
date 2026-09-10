@@ -76,9 +76,11 @@ export function BacklogRail({
   const { t } = useI18n();
 
   const peak = Math.max(1, ...COLUMNS.map((column) => countsByStatus[column.key] ?? 0));
+  /* Todo projeto vivo aparece, inclusive o de contagem zero. Filtrar por contagem
+     escondia o projeto no instante em que ele nascia e deixava o projeto vazio
+     inalcancavel como filtro, que e justamente quando se quer alcanca-lo. */
   const visibleProjects = projects
     .map((project) => ({ project, count: countByProject.get(project.id) ?? 0 }))
-    .filter((row) => row.count > 0 || row.project.slug === activeProject)
     .sort((a, b) => b.count - a.count || a.project.name.localeCompare(b.project.name));
 
   return (
@@ -291,7 +293,11 @@ function ProjectRow({
         }`}
       >
         <span className="truncate">{name}</span>
-        <b className="ml-auto font-mono text-[10.5px] font-bold opacity-80">{count}</b>
+        <b
+          className={`ml-auto font-mono text-[10.5px] font-bold ${count === 0 ? "opacity-40" : "opacity-80"}`}
+        >
+          {count}
+        </b>
       </button>
     </div>
   );

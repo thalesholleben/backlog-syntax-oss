@@ -233,6 +233,29 @@ test("search and the owner filter narrow the board without touching the API", as
   await expect(rls).toBeVisible();
 });
 
+/* Projeto nasce sem tarefa. Se a lateral escondesse contagem zero, criar um projeto seria
+   invisível e o projeto vazio ficaria inalcançável como filtro. */
+test("a project with no open task stays in the rail and filters the board to empty", async ({
+  page,
+}) => {
+  await page.route(`**/v1/workspaces/${workspaceId}/tasks?*`, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: [task()], page: { nextCursor: null, hasMore: false } }),
+    }),
+  );
+
+  await page.goto(`/w/${workspace.slug}`);
+  const contrato = page.getByRole("button", { name: openCard("Escrever contrato do endpoint") });
+  await expect(contrato).toBeVisible();
+
+  const emptyProject = page.getByRole("button", { name: `${otherProject.name} 0` });
+  await expect(emptyProject).toBeVisible();
+  await emptyProject.click();
+  await expect(contrato).toBeHidden();
+});
+
 test("the project filter in the rail narrows the board and keeps the counts honest", async ({
   page,
 }) => {

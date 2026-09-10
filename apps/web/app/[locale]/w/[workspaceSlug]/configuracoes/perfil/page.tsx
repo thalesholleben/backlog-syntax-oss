@@ -3,6 +3,7 @@
 import { useI18n } from "@/lib/i18n/provider";
 import { useRouter } from "@/lib/i18n/navigation";
 
+import { ChangePasswordForm } from "@/components/auth/change-password-form";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { authClient, useSession } from "@/lib/auth-client";
@@ -34,6 +35,10 @@ export default function ProfileSettingsPage() {
           </div>
         </div>
       )}
+
+      <div className="rounded-card border border-line bg-surface p-5">
+        <ChangePasswordForm />
+      </div>
 
       <Button
         variant="secondary"
