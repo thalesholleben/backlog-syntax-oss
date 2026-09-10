@@ -88,6 +88,7 @@ export const UpdateTaskInputSchema = z
     expectedVersion: z.number().int().positive(),
     patch: z
       .object({
+        projectId: IdentifierSchema.optional(),
         title: z.string().trim().min(1).max(200).optional(),
         description: z.string().max(50_000).nullable().optional(),
         status: TaskStatusSchema.optional(),

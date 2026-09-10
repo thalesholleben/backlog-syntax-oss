@@ -524,4 +524,10 @@ export const english = {
     "The password could not be changed right now. Try again in a moment.",
   "Senha alterada. Suas outras sessões foram encerradas.":
     "Password changed. Your other sessions were ended.",
+  "Apagar projeto": "Delete project",
+  "Apagar {0}": "Delete {0}",
+  "Apagar {0}?": "Delete {0}?",
+  "Este projeto tem {0} tarefa(s). Apagar o projeto apaga essas tarefas junto, e isso não se desfaz pela interface.":
+    "This project holds {0} task(s). Deleting the project deletes them with it, and the interface cannot undo that.",
+  "Apagar o projeto e as tarefas": "Delete the project and its tasks",
 } as const;

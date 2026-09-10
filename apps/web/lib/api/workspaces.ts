@@ -37,6 +37,19 @@ export function listProjects(workspaceId: string, signal?: AbortSignal): Promise
     .then((page) => page.data);
 }
 
+/** `withTasks` e' a intencao explicita de levar as tarefas junto; sem ela a API recusa. */
+export function deleteProject(
+  workspaceId: string,
+  projectId: string,
+  withTasks: boolean,
+  idempotencyKey: string,
+): Promise<void> {
+  return apiClient.delete<void>(
+    `/v1/workspaces/${workspaceId}/projects/${projectId}?withTasks=${withTasks ? "true" : "false"}`,
+    { idempotencyKey },
+  );
+}
+
 export function createProject(
   workspaceId: string,
   input: { name: string; slug: string },

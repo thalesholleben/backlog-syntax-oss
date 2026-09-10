@@ -947,6 +947,150 @@ integration("product runtime with PostgreSQL 18", () => {
     expect(reusedWorkspace.status, await reusedWorkspace.clone().text()).toBe(201);
   });
 
+  it("refuses to delete a project holding tasks, and takes them only when told to", async () => {
+    const cookie = await signUpFresh(`delete-user-${RUN_ID}@integration.test`);
+    const created = await jsonRequest("/v1/workspaces", cookie, "POST", {
+      name: "Delete workspace",
+      slug: `delete-ws-${RUN_ID}`,
+    });
+    expect(created.status, await created.clone().text()).toBe(201);
+    const workspace = ((await created.json()) as { id: string }).id;
+
+    const makeProject = async (slug: string) => {
+      const response = await jsonRequest(
+        `/v1/workspaces/${workspace}/projects`,
+        cookie,
+        "POST",
+        { name: slug, slug },
+        { "idempotency-key": `${slug}-${RUN_ID}` },
+      );
+      expect(response.status, await response.clone().text()).toBe(201);
+      return ((await response.json()) as { id: string }).id;
+    };
+    const countTasks = async (): Promise<number> => {
+      const response = await request(`/v1/workspaces/${workspace}/tasks`, {
+        headers: { cookie, origin: WEB_ORIGIN },
+      });
+      expect(response.status, await response.clone().text()).toBe(200);
+      return ((await response.json()) as { data: unknown[] }).data.length;
+    };
+
+    const empty = await makeProject("empty");
+    const loaded = await makeProject("loaded");
+    for (const title of ["First", "Second"]) {
+      const task = await jsonRequest(
+        `/v1/workspaces/${workspace}/tasks`,
+        cookie,
+        "POST",
+        { projectId: loaded, title },
+        { "idempotency-key": `${title}-${RUN_ID}` },
+      );
+      expect(task.status, await task.clone().text()).toBe(201);
+    }
+    expect(await countTasks()).toBe(2);
+
+    // Projeto vazio sai sem cerimônia: não há o que perder.
+    const removedEmpty = await jsonRequest(
+      `/v1/workspaces/${workspace}/projects/${empty}`,
+      cookie,
+      "DELETE",
+      undefined,
+      { "idempotency-key": `delete-empty-${RUN_ID}` },
+    );
+    expect(removedEmpty.status, await removedEmpty.clone().text()).toBe(204);
+
+    // Com tarefa viva, apagar sem dizer que sabe disso tem de falhar.
+    const refused = await jsonRequest(
+      `/v1/workspaces/${workspace}/projects/${loaded}`,
+      cookie,
+      "DELETE",
+      undefined,
+      { "idempotency-key": `delete-loaded-1-${RUN_ID}` },
+    );
+    expect(refused.status, await refused.clone().text()).toBe(409);
+    expect(((await refused.json()) as { code: string }).code).toBe("conflict");
+    // E a recusa não pode ter levado nada consigo.
+    expect(await countTasks()).toBe(2);
+
+    const removed = await jsonRequest(
+      `/v1/workspaces/${workspace}/projects/${loaded}?withTasks=true`,
+      cookie,
+      "DELETE",
+      undefined,
+      { "idempotency-key": `delete-loaded-2-${RUN_ID}` },
+    );
+    expect(removed.status, await removed.clone().text()).toBe(204);
+    expect(await countTasks()).toBe(0);
+  });
+
+  it("moves a task between projects and refuses one that is gone", async () => {
+    const cookie = await signUpFresh(`move-user-${RUN_ID}@integration.test`);
+    const created = await jsonRequest("/v1/workspaces", cookie, "POST", {
+      name: "Move workspace",
+      slug: `move-ws-${RUN_ID}`,
+    });
+    expect(created.status, await created.clone().text()).toBe(201);
+    const workspace = ((await created.json()) as { id: string }).id;
+
+    const makeProject = async (slug: string) => {
+      const response = await jsonRequest(
+        `/v1/workspaces/${workspace}/projects`,
+        cookie,
+        "POST",
+        { name: slug, slug },
+        { "idempotency-key": `${slug}-move-${RUN_ID}` },
+      );
+      expect(response.status, await response.clone().text()).toBe(201);
+      return ((await response.json()) as { id: string }).id;
+    };
+
+    const origin = await makeProject("origin");
+    const destination = await makeProject("destination");
+    const retired = await makeProject("retired");
+
+    const created2 = await jsonRequest(
+      `/v1/workspaces/${workspace}/tasks`,
+      cookie,
+      "POST",
+      { projectId: origin, title: "Travelling task" },
+      { "idempotency-key": `move-task-${RUN_ID}` },
+    );
+    expect(created2.status, await created2.clone().text()).toBe(201);
+    const task = (await created2.json()) as { id: string; version: number };
+
+    const moved = await jsonRequest(
+      `/v1/workspaces/${workspace}/tasks/${task.id}`,
+      cookie,
+      "PATCH",
+      { projectId: destination },
+      { "if-match": `"${task.version}"`, "idempotency-key": `move-1-${RUN_ID}` },
+    );
+    expect(moved.status, await moved.clone().text()).toBe(200);
+    const afterMove = (await moved.json()) as { projectId: string; version: number };
+    expect(afterMove.projectId).toBe(destination);
+
+    /* A chave estrangeira aceitaria um projeto excluído, porque a linha continua na tabela.
+       A tarefa acabaria num projeto que a lateral não mostra, invisível pelo caminho oposto
+       ao que já corrigimos. */
+    const retire = await jsonRequest(
+      `/v1/workspaces/${workspace}/projects/${retired}`,
+      cookie,
+      "DELETE",
+      undefined,
+      { "idempotency-key": `retire-${RUN_ID}` },
+    );
+    expect(retire.status, await retire.clone().text()).toBe(204);
+
+    const refused = await jsonRequest(
+      `/v1/workspaces/${workspace}/tasks/${task.id}`,
+      cookie,
+      "PATCH",
+      { projectId: retired },
+      { "if-match": `"${afterMove.version}"`, "idempotency-key": `move-2-${RUN_ID}` },
+    );
+    expect(refused.status, await refused.clone().text()).toBe(404);
+  });
+
   it("changes a password, keeps the caller signed in and revokes the other session", async () => {
     /* Conta própria, e não a do resto da suíte: a revogação derrubaria `firstCookie`, que os
        testes seguintes usam. As três cookies do harness são de usuários diferentes, então

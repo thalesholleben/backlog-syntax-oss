@@ -60,6 +60,13 @@ const VersionHeaders = IdempotencyHeaders.extend({ "If-Match": z.string().min(1)
 const TASK_QUEUE_BUCKET = "task-queue";
 const TASK_QUEUE_WINDOW_SECONDS = 60;
 
+const RestDeleteProjectQuery = z.object({
+  withTasks: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
+});
+
 const RestTaskQueueQuery = z.object({
   projectId: IdentifierSchema,
   limit: z.coerce.number().int().min(1).max(50).default(20),
@@ -271,9 +278,17 @@ function registerDocumentation(app: OpenAPIHono<{ Variables: AppVariables }>): v
       path: "/v1/workspaces/{workspaceId}/projects/{projectId}",
       operationId: "deleteProject",
       summary: "Delete a project",
-      description: "Deletes one project through an idempotent workspace-scoped request.",
-      request: { params: ProjectParams, headers: IdempotencyHeaders },
-      responses: { 204: { description: "Project deleted" } },
+      description:
+        "Deletes one project through an idempotent workspace-scoped request. Refuses with 409 while the project still holds tasks, unless withTasks is set, which deletes them with it.",
+      request: {
+        params: ProjectParams,
+        query: RestDeleteProjectQuery,
+        headers: IdempotencyHeaders,
+      },
+      responses: {
+        204: { description: "Project deleted" },
+        409: { description: "Project still holds tasks and withTasks was not set" },
+      },
     },
     {
       method: "get",
@@ -596,11 +611,13 @@ export function registerProductRoutes(
   });
   app.delete("/v1/workspaces/:workspaceId/projects/:projectId", async (c) => {
     const p = params(c, ProjectParams);
+    const query = parse(RestDeleteProjectQuery, c.req.query());
     await dependencies.repository.deleteProject(
       p.workspaceId,
       p.projectId,
       await auth(c, "write"),
       { idempotencyKey: idempotencyKey(c.req.raw.headers) },
+      { withTasks: query.withTasks },
     );
     return c.body(null, 204);
   });

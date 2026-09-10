@@ -322,6 +322,7 @@ export function TasksView({ workspaceSlug }: { workspaceSlug: string }) {
         <TaskDrawer
           workspaceId={workspaceId}
           task={detailsTask}
+          projects={projects}
           onClose={() => setDetailsId(null)}
         />
       ) : null}

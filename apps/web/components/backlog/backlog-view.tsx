@@ -15,6 +15,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { BacklogAging } from "@/components/backlog/backlog-aging";
@@ -23,15 +24,19 @@ import { BacklogColumn } from "@/components/backlog/backlog-column";
 import { BacklogHero } from "@/components/backlog/backlog-hero";
 import { ALL_PROJECTS, BacklogRail, RecentlyClosedPanel } from "@/components/backlog/backlog-rail";
 import { CardGhost } from "@/components/backlog/card-ghost";
+import { DeleteProjectDialog } from "@/components/backlog/delete-project-dialog";
 import { NewProjectDialog } from "@/components/backlog/new-project-dialog";
 import { NewTaskDialog } from "@/components/backlog/new-task-dialog";
 import { TaskDrawer } from "@/components/backlog/task-drawer";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/toast";
+import { newIdempotencyKey } from "@/lib/api/client";
+import { deleteProject } from "@/lib/api/workspaces";
 import { WorkspaceNotFound } from "@/components/workspace-not-found";
 import type { BoardTask } from "@/lib/backlog/board-task";
 import { positionAfterLast } from "@/lib/backlog/position";
-import { useTaskMutations, useTasks } from "@/lib/backlog/use-tasks";
+import { tasksQueryKey, useTaskMutations, useTasks } from "@/lib/backlog/use-tasks";
 import {
   ageInDays,
   COLUMNS,
@@ -42,6 +47,7 @@ import {
   withAge,
 } from "@/lib/backlog/view-model";
 import type { TaskPriority, TaskStatus } from "@/lib/domain-types";
+import { errorMessage } from "@/lib/i18n/errors";
 import { statusLabel } from "@/lib/task-presentation";
 import { useActiveWorkspace } from "@/lib/use-active-workspace";
 
@@ -77,6 +83,11 @@ export function BacklogView({
   const [openCard, setOpenCard] = useState<string | null>(null);
   const [dragging, setDragging] = useState<BoardTask | null>(null);
   const [details, setDetails] = useState<string | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<{
+    id: string;
+    name: string;
+    tasks: number;
+  } | null>(null);
   const [newTask, setNewTask] = useState(false);
   const [newProject, setNewProject] = useState(false);
 
@@ -157,6 +168,48 @@ export function BacklogView({
     }
     return counts;
   }, [allTasks]);
+
+  /* `countByProject` conta so o que esta em aberto, que e o numero que a lateral mostra.
+     Apagar projeto olha outro conjunto: toda tarefa viva, concluida inclusive, porque e
+     isso que o servidor apaga junto. */
+  const liveByProject = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const task of allTasks) {
+      counts.set(task.projectId, (counts.get(task.projectId) ?? 0) + 1);
+    }
+    return counts;
+  }, [allTasks]);
+
+  const queryClient = useQueryClient();
+  const { notify } = useToast();
+  const removeProject = useMutation({
+    mutationFn: ({ projectId, withTasks }: { projectId: string; withTasks: boolean }) =>
+      deleteProject(workspaceId, projectId, withTasks, newIdempotencyKey()),
+    onSuccess: async (_data, variables) => {
+      /* O filtro guarda o slug. Se o projeto apagado era o filtro ativo, o quadro ficaria
+         preso num recorte que nao existe mais. */
+      const removed = projects.find((project) => project.id === variables.projectId);
+      if (removed && projectFilter === removed.slug) setProjectFilter(ALL_PROJECTS);
+      setProjectToDelete(null);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["workspace-context", workspaceId] }),
+        queryClient.invalidateQueries({ queryKey: tasksQueryKey(workspaceId) }),
+      ]);
+    },
+    onError: (error: unknown) => notify("error", errorMessage(error, t)),
+  });
+
+  function requestDeleteProject(projectId: string) {
+    const target = projects.find((project) => project.id === projectId);
+    if (!target) return;
+    const tasks = liveByProject.get(projectId) ?? 0;
+    // Projeto vazio nao rende confirmacao: nao ha o que perder e o modal so vira ruido.
+    if (tasks === 0) {
+      removeProject.mutate({ projectId, withTasks: false });
+      return;
+    }
+    setProjectToDelete({ id: projectId, name: target.name, tasks });
+  }
 
   const byStatus = useMemo(() => {
     const groups: Record<TaskStatus, BoardTask[]> = {
@@ -406,6 +459,7 @@ export function BacklogView({
               onFilterProject={setProjectFilter}
               onPinProject={pinProject}
               onNewProject={() => setNewProject(true)}
+              onDeleteProject={requestDeleteProject}
             />
           </aside>
         </div>
@@ -458,8 +512,22 @@ export function BacklogView({
         onClose={() => setNewProject(false)}
         workspaceId={workspaceId}
       />
+      <DeleteProjectDialog
+        project={projectToDelete}
+        isPending={removeProject.isPending}
+        onConfirm={() =>
+          projectToDelete &&
+          removeProject.mutate({ projectId: projectToDelete.id, withTasks: true })
+        }
+        onClose={() => setProjectToDelete(null)}
+      />
       {detailsTask ? (
-        <TaskDrawer workspaceId={workspaceId} task={detailsTask} onClose={() => setDetails(null)} />
+        <TaskDrawer
+          workspaceId={workspaceId}
+          task={detailsTask}
+          projects={projects}
+          onClose={() => setDetails(null)}
+        />
       ) : null}
     </div>
   );

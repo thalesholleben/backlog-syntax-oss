@@ -2804,7 +2804,7 @@
       "delete": {
         "operationId": "deleteProject",
         "summary": "Delete a project",
-        "description": "Deletes one project through an idempotent workspace-scoped request.",
+        "description": "Deletes one project through an idempotent workspace-scoped request. Refuses with 409 while the project still holds tasks, unless withTasks is set, which deletes them with it.",
         "security": [
           {
             "sessionCookie": []
@@ -2833,6 +2833,19 @@
             "required": true,
             "name": "projectId",
             "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "default": "false"
+            },
+            "required": false,
+            "name": "withTasks",
+            "in": "query"
           },
           {
             "schema": {
@@ -2880,14 +2893,7 @@
             }
           },
           "409": {
-            "description": "RFC 9457 Problem Details",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
+            "description": "Project still holds tasks and withTasks was not set"
           },
           "413": {
             "description": "RFC 9457 Problem Details",
@@ -3556,6 +3562,11 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "projectId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "019641a8-8c54-7f6c-8d2f-3fd1eb8b7531"
+                  },
                   "title": {
                     "type": "string",
                     "minLength": 1,

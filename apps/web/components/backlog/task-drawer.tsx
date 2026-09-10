@@ -9,6 +9,7 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { PrincipalBadge } from "@/components/ui/principal-badge";
 import { listTaskEvents } from "@/lib/api/tasks";
+import type { ProjectRef } from "@/components/backlog/backlog-rail";
 import type { BoardTask } from "@/lib/backlog/board-task";
 import { useTaskMutations } from "@/lib/backlog/use-tasks";
 import type { SubjectType, TaskPriority, TaskStatus } from "@/lib/domain-types";
@@ -25,10 +26,12 @@ const priorities: TaskPriority[] = ["low", "medium", "high", "urgent"];
 export function TaskDrawer({
   workspaceId,
   task,
+  projects,
   onClose,
 }: {
   workspaceId: string;
   task: BoardTask;
+  projects: ProjectRef[];
   onClose: () => void;
 }) {
   const { t, locale } = useI18n();
@@ -84,6 +87,16 @@ export function TaskDrawer({
       taskId: task.id,
       expectedVersion: task.version,
       patch: { priority },
+    });
+  }
+
+  function changeProject(projectId: string) {
+    if (projectId === task.projectId) return;
+    mutations.update.mutate({
+      workspaceId,
+      taskId: task.id,
+      expectedVersion: task.version,
+      patch: { projectId },
     });
   }
 
@@ -251,6 +264,24 @@ export function TaskDrawer({
               ))}
             </div>
           </fieldset>
+
+          <Field label={t("Projeto")}>
+            {({ inputId }) => (
+              <select
+                id={inputId}
+                value={task.projectId}
+                onChange={(event) => changeProject(event.target.value)}
+                disabled={mutations.update.isPending}
+                className="min-h-12 w-full rounded-control border border-line bg-surface px-4 text-base text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-accent"
+              >
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
 
           <fieldset>
             <legend className="mb-2 text-sm font-bold">{t("Prioridade")}</legend>

@@ -34,6 +34,7 @@ export interface CreateTaskData {
 }
 
 export interface UpdateTaskData {
+  projectId?: string | undefined;
   title?: string | undefined;
   description?: string | null | undefined;
   status?: Task["status"] | undefined;
@@ -810,6 +811,7 @@ export class PostgresProductRepository {
     projectId: string,
     principal: Principal,
     metadata: MutationMetadata,
+    options: { withTasks: boolean } = { withTasks: false },
   ): Promise<void> {
     await this.transaction(async (client) => {
       const role = await this.setTenantContext(client, workspaceId, principal);
@@ -820,15 +822,41 @@ export class PostgresProductRepository {
         principal,
         "delete_project",
         metadata,
-        { projectId },
+        // `withTasks` entra na assinatura da requisicao de proposito: a mesma chave de
+        // idempotencia com intencao diferente e outra requisicao, nao uma repeticao.
+        { projectId, withTasks: options.withTasks },
         204,
         async () => {
+          const live = await client.query<{ count: string }>(
+            `SELECT count(*)::text AS count
+             FROM domain.tasks
+             WHERE tenant_id = $1::uuid AND project_id = $2::uuid AND deleted_at IS NULL`,
+            [workspaceId, projectId],
+          );
+          const tasks = Number(live.rows[0]?.count ?? "0");
+          /* Apagar um projeto nunca apaga tarefa por tabela: quem quiser levar as tarefas
+             junto precisa dizer isso na requisicao. Sem essa trava, um cliente que so
+             queria limpar a lateral apagaria trabalho sem ser perguntado. */
+          if (tasks > 0 && !options.withTasks) {
+            throw new DomainError(
+              "conflict",
+              409,
+              `Project still holds ${tasks} task(s); repeat with withTasks to delete them too`,
+            );
+          }
+          if (tasks > 0) {
+            await client.query(
+              `UPDATE domain.tasks SET deleted_at = now()
+               WHERE tenant_id = $1::uuid AND project_id = $2::uuid AND deleted_at IS NULL`,
+              [workspaceId, projectId],
+            );
+          }
           const result = await client.query(
             "UPDATE domain.projects SET deleted_at = now() WHERE tenant_id = $1::uuid AND project_id = $2::uuid AND deleted_at IS NULL",
             [workspaceId, projectId],
           );
           if (result.rowCount !== 1) throw new DomainError("not_found", 404, "Project not found");
-          return { deleted: true };
+          return { deleted: true, tasks };
         },
       );
     });
@@ -1095,6 +1123,20 @@ export class PostgresProductRepository {
           }
           if (patch.dueDate !== undefined) add("due_date", patch.dueDate, "::date");
           if (patch.position !== undefined) add("position", patch.position, "::numeric");
+          if (patch.projectId !== undefined) {
+            /* A chave estrangeira so garante que o projeto existe, e projeto excluido
+               continua na tabela. Mover para um deles deixaria a tarefa num projeto que a
+               lateral nao mostra, que e o mesmo defeito por outro caminho. */
+            const target = await client.query(
+              `SELECT 1 FROM domain.projects
+               WHERE tenant_id = $1::uuid AND project_id = $2::uuid AND deleted_at IS NULL`,
+              [workspaceId, patch.projectId],
+            );
+            if (target.rowCount !== 1) {
+              throw new DomainError("not_found", 404, "Project not found");
+            }
+            add("project_id", patch.projectId, "::uuid");
+          }
           if (assignments.length === 1) {
             throw new DomainError("invalid_request", 422, "Task patch cannot be empty");
           }
@@ -1113,6 +1155,9 @@ export class PostgresProductRepository {
             const row = result.rows[0];
             if (row) return taskFromRow(row);
           } catch (error) {
+            if (hasPostgresCode(error, "23503")) {
+              throw new DomainError("not_found", 404, "Project not found");
+            }
             if (hasPostgresCode(error, "23514") || hasPostgresCode(error, "22P02")) {
               throw new DomainError("invalid_request", 422, "Task state is invalid");
             }

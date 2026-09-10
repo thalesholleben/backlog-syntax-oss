@@ -1,7 +1,7 @@
 "use client";
 
 import { useI18n } from "@/lib/i18n/provider";
-import { Check, Pin, Plus } from "lucide-react";
+import { Check, Pin, Plus, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import type { BoardTask } from "@/lib/backlog/board-task";
 import { COLUMNS, type Owner, shortDate } from "@/lib/backlog/view-model";
@@ -62,6 +62,7 @@ export function BacklogRail({
   onFilterProject,
   onPinProject,
   onNewProject,
+  onDeleteProject,
 }: {
   openByOwner: Record<Owner, number>;
   countsByStatus: Record<string, number>;
@@ -72,6 +73,7 @@ export function BacklogRail({
   onFilterProject: (slug: string) => void;
   onPinProject: (slug: string) => void;
   onNewProject: () => void;
+  onDeleteProject: (projectId: string) => void;
 }) {
   const { t } = useI18n();
 
@@ -148,6 +150,7 @@ export function BacklogRail({
               pinnable
               onFilter={onFilterProject}
               onPin={onPinProject}
+              onDelete={() => onDeleteProject(project.id)}
             />
           ))}
         </div>
@@ -249,6 +252,7 @@ function ProjectRow({
   pinnable,
   onFilter,
   onPin,
+  onDelete,
 }: {
   slug: string;
   name: string;
@@ -258,6 +262,7 @@ function ProjectRow({
   pinnable: boolean;
   onFilter: (slug: string) => void;
   onPin: (slug: string) => void;
+  onDelete?: (() => void) | undefined;
 }) {
   const { t } = useI18n();
 
@@ -299,6 +304,17 @@ function ProjectRow({
           {count}
         </b>
       </button>
+      {onDelete ? (
+        <button
+          type="button"
+          onClick={onDelete}
+          title={t("Apagar projeto")}
+          aria-label={t("Apagar {0}", { "0": name })}
+          className="grid h-7 w-[22px] shrink-0 place-items-center rounded text-faint hover:text-danger"
+        >
+          <Trash2 aria-hidden="true" className="size-3.5" />
+        </button>
+      ) : null}
     </div>
   );
 }
