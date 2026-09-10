@@ -12,7 +12,7 @@ import {
   submitButton,
 } from "@/components/backlog/backlog-dialog";
 import { useToast } from "@/components/ui/toast";
-import { newIdempotencyKey } from "@/lib/api/client";
+import { ApiError, newIdempotencyKey } from "@/lib/api/client";
 import { errorMessage } from "@/lib/i18n/errors";
 import { createProject } from "@/lib/api/workspaces";
 
@@ -43,6 +43,7 @@ export function NewProjectDialog({
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
+  const [slugTaken, setSlugTaken] = useState(false);
 
   const create = useMutation({
     mutationFn: (input: { name: string; slug: string }) =>
@@ -52,6 +53,12 @@ export function NewProjectDialog({
       close();
     },
     onError: (error: unknown) => {
+      // O 409 nomeia a colisao junto ao campo. O toast generico diria "conflita com o
+      // estado atual", que e verdade e nao ajuda ninguem a escolher outro identificador.
+      if (error instanceof ApiError && error.status === 409) {
+        setSlugTaken(true);
+        return;
+      }
       notify("error", errorMessage(error, t));
     },
   });
@@ -60,6 +67,7 @@ export function NewProjectDialog({
     setName("");
     setSlug("");
     setSlugTouched(false);
+    setSlugTaken(false);
     onClose();
   }
 
@@ -92,7 +100,10 @@ export function NewProjectDialog({
             maxLength={120}
             autoComplete="off"
             value={name}
-            onChange={(event) => setName(event.target.value)}
+            onChange={(event) => {
+              setSlugTaken(false);
+              setName(event.target.value);
+            }}
             placeholder={t("Ex.: Cliente Acme")}
             className={fieldControl}
           />
@@ -110,6 +121,7 @@ export function NewProjectDialog({
             value={finalSlug}
             onChange={(event) => {
               setSlugTouched(true);
+              setSlugTaken(false);
               setSlug(toSlug(event.target.value));
             }}
             placeholder={t("cliente-acme")}
@@ -120,6 +132,11 @@ export function NewProjectDialog({
               "Minúsculas, números e hífen. Preenchido a partir do nome enquanto você não editar.",
             )}
           </p>
+          {slugTaken ? (
+            <p role="alert" className="text-[10.5px] font-bold leading-[1.45] text-danger">
+              {t("Já existe um projeto com este identificador. Escolha outro.")}
+            </p>
+          ) : null}
         </div>
 
         <div className={dialogActions}>

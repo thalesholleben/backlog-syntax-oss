@@ -85,6 +85,26 @@ integration("product runtime with PostgreSQL 18", () => {
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
 
+  /* Conta descartável para teste que cria ou apaga workspace. O usuário do harness não
+     serve: exclusão lógica de workspace mantém a associação, e o teste de exclusão de
+     conta afirma quantas associações o primeiro usuário tem. */
+  const signUpFresh = async (email: string, password = "Integration-password-2026") => {
+    const response = await request("/api/auth/sign-up/email", {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: WEB_ORIGIN },
+      body: JSON.stringify({
+        name: email.split("@")[0],
+        email,
+        password,
+        termsAcceptedAt: new Date().toISOString(),
+        privacyNoticeAcceptedAt: new Date().toISOString(),
+        legalNoticeVersion: "2026-08-31",
+      }),
+    });
+    expect(response.status, await response.clone().text()).toBe(200);
+    return cookieHeader(response);
+  };
+
   beforeAll(async () => {
     config = parseConfig({
       NODE_ENV: "test",
@@ -828,6 +848,163 @@ integration("product runtime with PostgreSQL 18", () => {
     } finally {
       lateClient.release();
     }
+  });
+
+  it("answers a duplicate live slug with 409 and frees the slug once the row is gone", async () => {
+    const cookie = await signUpFresh(`slug-user-${RUN_ID}@integration.test`);
+    const owned = await jsonRequest("/v1/workspaces", cookie, "POST", {
+      name: "Slug workspace",
+      slug: `slug-ws-${RUN_ID}`,
+    });
+    expect(owned.status, await owned.clone().text()).toBe(201);
+    const ownedWorkspace = ((await owned.json()) as { id: string }).id;
+
+    const listProjects = async (): Promise<number> => {
+      const response = await request(`/v1/workspaces/${ownedWorkspace}/projects`, {
+        headers: { cookie, origin: WEB_ORIGIN },
+      });
+      expect(response.status, await response.clone().text()).toBe(200);
+      return ((await response.json()) as { data: unknown[] }).data.length;
+    };
+    const createProject = (slug: string, key: string) =>
+      jsonRequest(
+        `/v1/workspaces/${ownedWorkspace}/projects`,
+        cookie,
+        "POST",
+        { name: `Duplicate ${slug}`, slug },
+        { "idempotency-key": key },
+      );
+
+    const slug = `duplicate-${RUN_ID}`;
+    const created = await createProject(slug, `duplicate-project-1-${RUN_ID}`);
+    expect(created.status, await created.clone().text()).toBe(201);
+    const createdId = ((await created.json()) as { id: string }).id;
+
+    const before = await listProjects();
+    const conflictKey = `duplicate-project-2-${RUN_ID}`;
+    const conflict = await createProject(slug, conflictKey);
+    expect(conflict.status, await conflict.clone().text()).toBe(409);
+    expect(((await conflict.json()) as { code: string }).code).toBe("conflict");
+    // O conflito não pode ter criado nada: a transação inteira precisa ter voltado.
+    expect(await listProjects()).toBe(before);
+
+    /* E não pode ter gravado idempotência de sucesso: se gravasse, o mesmo cabeçalho
+       devolveria depois um 201 para um projeto que nunca existiu. */
+    const owner = await request("/api/auth/get-session", { headers: { cookie } });
+    const ownerId = ((await owner.json()) as { user: { id: string } }).user.id;
+    const inspector = await pools.app.connect();
+    try {
+      await inspector.query("BEGIN");
+      await inspector.query("SELECT private.set_request_context($1::uuid, 'user', $2::uuid)", [
+        ownedWorkspace,
+        ownerId,
+      ]);
+      const receipts = await inspector.query<{ count: string }>(
+        `SELECT count(*)::text AS count
+         FROM domain.idempotency_keys
+         WHERE tenant_id = $1::uuid AND idempotency_key = $2`,
+        [ownedWorkspace, conflictKey],
+      );
+      expect(receipts.rows[0]?.count).toBe("0");
+      await inspector.query("COMMIT");
+    } finally {
+      inspector.release();
+    }
+
+    const removed = await jsonRequest(
+      `/v1/workspaces/${ownedWorkspace}/projects/${createdId}`,
+      cookie,
+      "DELETE",
+      undefined,
+      { "idempotency-key": `duplicate-project-delete-${RUN_ID}` },
+    );
+    expect(removed.status, await removed.clone().text()).toBe(204);
+    // O índice é parcial, então o slug de um projeto excluído volta a ficar livre.
+    const reused = await createProject(slug, `duplicate-project-3-${RUN_ID}`);
+    expect(reused.status, await reused.clone().text()).toBe(201);
+
+    const workspaceSlug = `duplicate-ws-${RUN_ID}`;
+    const workspace = await jsonRequest("/v1/workspaces", cookie, "POST", {
+      name: "Duplicate workspace",
+      slug: workspaceSlug,
+    });
+    expect(workspace.status, await workspace.clone().text()).toBe(201);
+    const workspaceId = ((await workspace.json()) as { id: string }).id;
+
+    const workspaceConflict = await jsonRequest("/v1/workspaces", cookie, "POST", {
+      name: "Duplicate workspace again",
+      slug: workspaceSlug,
+    });
+    expect(workspaceConflict.status, await workspaceConflict.clone().text()).toBe(409);
+    expect(((await workspaceConflict.json()) as { code: string }).code).toBe("conflict");
+
+    const droppedWorkspace = await jsonRequest(`/v1/workspaces/${workspaceId}`, cookie, "DELETE");
+    expect(droppedWorkspace.status, await droppedWorkspace.clone().text()).toBe(204);
+    const reusedWorkspace = await jsonRequest("/v1/workspaces", cookie, "POST", {
+      name: "Duplicate workspace reused",
+      slug: workspaceSlug,
+    });
+    expect(reusedWorkspace.status, await reusedWorkspace.clone().text()).toBe(201);
+  });
+
+  it("changes a password, keeps the caller signed in and revokes the other session", async () => {
+    /* Conta própria, e não a do resto da suíte: a revogação derrubaria `firstCookie`, que os
+       testes seguintes usam. As três cookies do harness são de usuários diferentes, então
+       a segunda sessão do MESMO usuário precisa nascer de um sign-in extra. */
+    const email = `password-user-${RUN_ID}@integration.test`;
+    const oldPassword = "Integration-password-2026";
+    const newPassword = "Integration-password-2026-rotated";
+
+    const currentJar = await signUpFresh(email, oldPassword);
+
+    const signIn = (password: string) =>
+      request("/api/auth/sign-in/email", {
+        method: "POST",
+        headers: { "content-type": "application/json", origin: WEB_ORIGIN },
+        body: JSON.stringify({ email, password }),
+      });
+    const otherSession = await signIn(oldPassword);
+    expect(otherSession.status, await otherSession.clone().text()).toBe(200);
+    const otherJar = cookieHeader(otherSession);
+    expect(otherJar).not.toBe(currentJar);
+
+    const sessionEmail = async (cookie: string): Promise<string | null> => {
+      const response = await request("/api/auth/get-session", { headers: { cookie } });
+      if (response.status !== 200) return null;
+      const payload = (await response.json()) as { user?: { email?: string } } | null;
+      return payload?.user?.email ?? null;
+    };
+    expect(await sessionEmail(currentJar)).toBe(email);
+    expect(await sessionEmail(otherJar)).toBe(email);
+
+    const wrong = await jsonRequest("/api/auth/change-password", currentJar, "POST", {
+      currentPassword: "wrong-current-password",
+      newPassword,
+      revokeOtherSessions: true,
+    });
+    expect(wrong.status).toBe(400);
+    expect(((await wrong.json()) as { code?: string }).code).toBe("INVALID_PASSWORD");
+    // Recusa não pode revogar nada nem trocar a senha pela metade. A credencial antiga
+    // precisa continuar valendo AGORA, antes da troca boa: depois dela não se mede mais.
+    expect(await sessionEmail(otherJar)).toBe(email);
+    const stillOldPassword = await signIn(oldPassword);
+    expect(stillOldPassword.status, await stillOldPassword.clone().text()).toBe(200);
+
+    const changed = await jsonRequest("/api/auth/change-password", currentJar, "POST", {
+      currentPassword: oldPassword,
+      newPassword,
+      revokeOtherSessions: true,
+    });
+    expect(changed.status, await changed.clone().text()).toBe(200);
+    // A resposta traz cookie novo; é ele que mantém esta sessão de pé.
+    const refreshedJar = cookieHeader(changed) || currentJar;
+    expect(await sessionEmail(refreshedJar)).toBe(email);
+    expect(await sessionEmail(otherJar)).toBeNull();
+
+    const withOldPassword = await signIn(oldPassword);
+    expect(withOldPassword.status).not.toBe(200);
+    const withNewPassword = await signIn(newPassword);
+    expect(withNewPassword.status, await withNewPassword.clone().text()).toBe(200);
   });
 
   it("exports personal and tenant data, then deletes only the requesting identity", async () => {

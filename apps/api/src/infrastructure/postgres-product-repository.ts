@@ -483,10 +483,20 @@ export class PostgresProductRepository {
       throw new DomainError("forbidden", 403, "Only users can create workspaces");
     }
     return this.transaction(async (client) => {
-      const created = await client.query<{ tenant_id: string }>(
-        "SELECT private.create_workspace($1::uuid, $2, $3) AS tenant_id",
-        [principal.subjectId, input.name, input.slug],
-      );
+      let created: QueryResult<{ tenant_id: string }>;
+      try {
+        created = await client.query<{ tenant_id: string }>(
+          "SELECT private.create_workspace($1::uuid, $2, $3) AS tenant_id",
+          [principal.subjectId, input.name, input.slug],
+        );
+      } catch (error) {
+        // O indice de slug e parcial: so colide com workspace vivo. Sem este mapeamento a
+        // violacao sobe crua e o cliente recebe 500 para um erro que e dele, nao nosso.
+        if (hasPostgresCode(error, "23505")) {
+          throw new DomainError("conflict", 409, "A workspace already uses this slug");
+        }
+        throw error;
+      }
       const tenantId = created.rows[0]?.tenant_id;
       if (!tenantId) throw new DomainError("internal_error", 500, "Workspace was not created");
       await this.setTenantContext(client, tenantId, principal);
@@ -725,15 +735,24 @@ export class PostgresProductRepository {
         input,
         201,
         async () => {
-          const result = await client.query<ProjectRow>(
-            `INSERT INTO domain.projects (tenant_id, name, slug, description)
+          try {
+            const result = await client.query<ProjectRow>(
+              `INSERT INTO domain.projects (tenant_id, name, slug, description)
            VALUES ($1::uuid, $2, $3, $4)
            RETURNING project_id, tenant_id, name, slug, description, created_at, updated_at`,
-            [workspaceId, input.name, input.slug, input.description ?? null],
-          );
-          const row = result.rows[0];
-          if (!row) throw new DomainError("internal_error", 500, "Project was not created");
-          return projectFromRow(row);
+              [workspaceId, input.name, input.slug, input.description ?? null],
+            );
+            const row = result.rows[0];
+            if (!row) throw new DomainError("internal_error", 500, "Project was not created");
+            return projectFromRow(row);
+          } catch (error) {
+            // `uq_projects_slug_live` e parcial, entao o slug de um projeto excluido
+            // continua livre. So o vivo conflita.
+            if (hasPostgresCode(error, "23505")) {
+              throw new DomainError("conflict", 409, "A project already uses this slug");
+            }
+            throw error;
+          }
         },
       );
     });

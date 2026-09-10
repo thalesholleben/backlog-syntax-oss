@@ -30,6 +30,7 @@ export const signIn = authClient.signIn;
 export const signUp = authClient.signUp;
 export const signOut = authClient.signOut;
 export const requestPasswordReset = authClient.requestPasswordReset;
+export const changePassword = authClient.changePassword;
 export const resetPassword = authClient.resetPassword;
 export function useSession(): ReturnType<typeof authClient.useSession> {
   return authClient.useSession();
