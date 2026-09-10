@@ -233,6 +233,57 @@ test("search and the owner filter narrow the board without touching the API", as
   await expect(rls).toBeVisible();
 });
 
+test("a project created from the rail appears in the list without a reload", async ({ page }) => {
+  const fresh = {
+    id: "019641a8-8c54-7f6c-8d2f-3fd1eb8b7540",
+    name: "Fila",
+    slug: "fila",
+    updatedAt: "2026-08-30T12:00:00Z",
+  };
+  let created = false;
+
+  await page.route(`**/v1/workspaces/${workspaceId}/tasks?*`, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: [task()], page: { nextCursor: null, hasMore: false } }),
+    }),
+  );
+  await page.route(`**/v1/workspaces/${workspaceId}/context`, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        workspace: { id: workspaceId, name: workspace.name, slug: workspace.slug },
+        principal: { subjectType: "user", subjectId: "u1", role: "owner" },
+        projects: created ? [project, otherProject, fresh] : [project, otherProject],
+      }),
+    }),
+  );
+  await page.route(`**/v1/workspaces/${workspaceId}/projects`, async (route) => {
+    if (route.request().method() !== "POST") return route.fallback();
+    created = true;
+    await route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: JSON.stringify(fresh),
+    });
+  });
+
+  await page.goto(`/w/${workspace.slug}`);
+  await expect(page.getByRole("heading", { name: "Aberto" })).toBeVisible();
+  const row = page.getByRole("button", { name: `${fresh.name} 0` });
+  await expect(row).toHaveCount(0);
+
+  await page.getByLabel("Criar projeto").click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Nome").fill(fresh.name);
+  await dialog.getByRole("button", { name: "Criar projeto" }).click();
+
+  // A lista sai do refetch do contexto, não de um reload: é isso que estava quebrado.
+  await expect(row).toBeVisible();
+});
+
 /* Projeto nasce sem tarefa. Se a lateral escondesse contagem zero, criar um projeto seria
    invisível e o projeto vazio ficaria inalcançável como filtro. */
 test("a project with no open task stays in the rail and filters the board to empty", async ({

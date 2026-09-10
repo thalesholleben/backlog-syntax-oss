@@ -881,11 +881,35 @@ integration("product runtime with PostgreSQL 18", () => {
     const createdId = ((await created.json()) as { id: string }).id;
 
     const before = await listProjects();
-    const conflict = await createProject(slug, `duplicate-project-2-${RUN_ID}`);
+    const conflictKey = `duplicate-project-2-${RUN_ID}`;
+    const conflict = await createProject(slug, conflictKey);
     expect(conflict.status, await conflict.clone().text()).toBe(409);
     expect(((await conflict.json()) as { code: string }).code).toBe("conflict");
     // O conflito não pode ter criado nada: a transação inteira precisa ter voltado.
     expect(await listProjects()).toBe(before);
+
+    /* E não pode ter gravado idempotência de sucesso: se gravasse, o mesmo cabeçalho
+       devolveria depois um 201 para um projeto que nunca existiu. */
+    const owner = await request("/api/auth/get-session", { headers: { cookie } });
+    const ownerId = ((await owner.json()) as { user: { id: string } }).user.id;
+    const inspector = await pools.app.connect();
+    try {
+      await inspector.query("BEGIN");
+      await inspector.query("SELECT private.set_request_context($1::uuid, 'user', $2::uuid)", [
+        ownedWorkspace,
+        ownerId,
+      ]);
+      const receipts = await inspector.query<{ count: string }>(
+        `SELECT count(*)::text AS count
+         FROM domain.idempotency_keys
+         WHERE tenant_id = $1::uuid AND idempotency_key = $2`,
+        [ownedWorkspace, conflictKey],
+      );
+      expect(receipts.rows[0]?.count).toBe("0");
+      await inspector.query("COMMIT");
+    } finally {
+      inspector.release();
+    }
 
     const removed = await jsonRequest(
       `/v1/workspaces/${ownedWorkspace}/projects/${createdId}`,
@@ -960,8 +984,11 @@ integration("product runtime with PostgreSQL 18", () => {
     });
     expect(wrong.status).toBe(400);
     expect(((await wrong.json()) as { code?: string }).code).toBe("INVALID_PASSWORD");
-    // Recusa não pode revogar nada nem trocar a senha pela metade.
+    // Recusa não pode revogar nada nem trocar a senha pela metade. A credencial antiga
+    // precisa continuar valendo AGORA, antes da troca boa: depois dela não se mede mais.
     expect(await sessionEmail(otherJar)).toBe(email);
+    const stillOldPassword = await signIn(oldPassword);
+    expect(stillOldPassword.status, await stillOldPassword.clone().text()).toBe(200);
 
     const changed = await jsonRequest("/api/auth/change-password", currentJar, "POST", {
       currentPassword: oldPassword,
