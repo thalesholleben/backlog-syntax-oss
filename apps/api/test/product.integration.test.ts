@@ -1089,6 +1089,17 @@ integration("product runtime with PostgreSQL 18", () => {
       { "if-match": `"${afterMove.version}"`, "idempotency-key": `move-2-${RUN_ID}` },
     );
     expect(refused.status, await refused.clone().text()).toBe(404);
+
+    /* Criar tambem: sem guarda, a FK aceitava o projeto apagado e a tarefa nascia invisivel,
+       que era o furo pelo qual o defeito voltava mesmo com o move protegido. */
+    const born = await jsonRequest(
+      `/v1/workspaces/${workspace}/tasks`,
+      cookie,
+      "POST",
+      { projectId: retired, title: "Born in a grave" },
+      { "idempotency-key": `born-${RUN_ID}` },
+    );
+    expect(born.status, await born.clone().text()).toBe(404);
   });
 
   it("changes a password, keeps the caller signed in and revokes the other session", async () => {

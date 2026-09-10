@@ -350,6 +350,29 @@ export class PostgresProductRepository {
     return row.role;
   }
 
+  /**
+   * Unico lugar que decide se um projeto aceita tarefa, e ele trava a linha.
+   *
+   * A chave estrangeira nao serve: exclusao aqui e logica, entao a linha do projeto
+   * continua existindo depois de apagada e a FK aceita feliz. E conferir sem travar so
+   * moveria o defeito para a janela entre a conferencia e a escrita: `deleteProject` toma
+   * `FOR UPDATE` na mesma linha, entao um create ou move concorrente espera a exclusao
+   * terminar e entao encontra a linha ja apagada, em vez de escapar por corrida.
+   */
+  private async lockLiveProject(
+    client: PoolClient,
+    workspaceId: string,
+    projectId: string,
+  ): Promise<void> {
+    const result = await client.query(
+      `SELECT 1 FROM domain.projects
+       WHERE tenant_id = $1::uuid AND project_id = $2::uuid AND deleted_at IS NULL
+       FOR SHARE`,
+      [workspaceId, projectId],
+    );
+    if (result.rowCount !== 1) throw new DomainError("not_found", 404, "Project not found");
+  }
+
   private assertManager(role: Workspace["role"], principal: Principal): void {
     if (principal.subjectType !== "user" || (role !== "owner" && role !== "admin")) {
       throw new DomainError("forbidden", 403, "Workspace manager access is required");
@@ -827,6 +850,15 @@ export class PostgresProductRepository {
         { projectId, withTasks: options.withTasks },
         204,
         async () => {
+          /* Trava a linha antes de contar. Sem isso, uma tarefa criada entre a contagem e a
+             exclusao sobreviveria apontando para um projeto morto. */
+          const target = await client.query(
+            `SELECT 1 FROM domain.projects
+             WHERE tenant_id = $1::uuid AND project_id = $2::uuid AND deleted_at IS NULL
+             FOR UPDATE`,
+            [workspaceId, projectId],
+          );
+          if (target.rowCount !== 1) throw new DomainError("not_found", 404, "Project not found");
           const live = await client.query<{ count: string }>(
             `SELECT count(*)::text AS count
              FROM domain.tasks
@@ -1044,6 +1076,7 @@ export class PostgresProductRepository {
         input,
         201,
         async () => {
+          await this.lockLiveProject(client, workspaceId, input.projectId);
           try {
             const result = await client.query<TaskRow>(
               `INSERT INTO domain.tasks (
@@ -1124,17 +1157,7 @@ export class PostgresProductRepository {
           if (patch.dueDate !== undefined) add("due_date", patch.dueDate, "::date");
           if (patch.position !== undefined) add("position", patch.position, "::numeric");
           if (patch.projectId !== undefined) {
-            /* A chave estrangeira so garante que o projeto existe, e projeto excluido
-               continua na tabela. Mover para um deles deixaria a tarefa num projeto que a
-               lateral nao mostra, que e o mesmo defeito por outro caminho. */
-            const target = await client.query(
-              `SELECT 1 FROM domain.projects
-               WHERE tenant_id = $1::uuid AND project_id = $2::uuid AND deleted_at IS NULL`,
-              [workspaceId, patch.projectId],
-            );
-            if (target.rowCount !== 1) {
-              throw new DomainError("not_found", 404, "Project not found");
-            }
+            await this.lockLiveProject(client, workspaceId, patch.projectId);
             add("project_id", patch.projectId, "::uuid");
           }
           if (assignments.length === 1) {

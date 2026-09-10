@@ -2893,7 +2893,14 @@
             }
           },
           "409": {
-            "description": "Project still holds tasks and withTasks was not set"
+            "description": "Project still holds tasks and withTasks was not set",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "413": {
             "description": "RFC 9457 Problem Details",

@@ -287,7 +287,9 @@ function registerDocumentation(app: OpenAPIHono<{ Variables: AppVariables }>): v
       },
       responses: {
         204: { description: "Project deleted" },
-        409: { description: "Project still holds tasks and withTasks was not set" },
+        // Espalhar `problem` preserva o `application/problem+json`: uma resposta especifica
+        // substitui a padrao inteira, e so a descricao deixaria o contrato sem corpo.
+        409: { ...problem, description: "Project still holds tasks and withTasks was not set" },
       },
     },
     {

@@ -31,7 +31,7 @@ import { TaskDrawer } from "@/components/backlog/task-drawer";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
-import { newIdempotencyKey } from "@/lib/api/client";
+import { ApiError, newIdempotencyKey } from "@/lib/api/client";
 import { deleteProject } from "@/lib/api/workspaces";
 import { WorkspaceNotFound } from "@/components/workspace-not-found";
 import type { BoardTask } from "@/lib/backlog/board-task";
@@ -86,7 +86,7 @@ export function BacklogView({
   const [projectToDelete, setProjectToDelete] = useState<{
     id: string;
     name: string;
-    tasks: number;
+    tasks: number | null;
   } | null>(null);
   const [newTask, setNewTask] = useState(false);
   const [newProject, setNewProject] = useState(false);
@@ -196,7 +196,19 @@ export function BacklogView({
         queryClient.invalidateQueries({ queryKey: tasksQueryKey(workspaceId) }),
       ]);
     },
-    onError: (error: unknown) => notify("error", errorMessage(error, t)),
+    onError: (error: unknown, variables) => {
+      /* O quadro nao lista tarefa arquivada, entao a contagem local pode dizer zero para um
+         projeto que o servidor ainda considera cheio. Quem manda e o 409: sem isto, apagar
+         um projeto so com arquivadas seria impossivel pela interface, com erro generico. */
+      if (error instanceof ApiError && error.status === 409) {
+        const target = projects.find((project) => project.id === variables.projectId);
+        if (target) {
+          setProjectToDelete({ id: target.id, name: target.name, tasks: null });
+          return;
+        }
+      }
+      notify("error", errorMessage(error, t));
+    },
   });
 
   function requestDeleteProject(projectId: string) {

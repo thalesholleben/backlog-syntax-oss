@@ -530,4 +530,6 @@ export const english = {
   "Este projeto tem {0} tarefa(s). Apagar o projeto apaga essas tarefas junto, e isso não se desfaz pela interface.":
     "This project holds {0} task(s). Deleting the project deletes them with it, and the interface cannot undo that.",
   "Apagar o projeto e as tarefas": "Delete the project and its tasks",
+  "Este projeto ainda tem tarefas, incluindo arquivadas que o quadro não lista. Apagar o projeto apaga essas tarefas junto, e isso não se desfaz pela interface.":
+    "This project still holds tasks, including archived ones the board does not list. Deleting the project deletes them with it, and the interface cannot undo that.",
 } as const;

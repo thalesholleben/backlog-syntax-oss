@@ -13,7 +13,7 @@ export function DeleteProjectDialog({
   onConfirm,
   onClose,
 }: {
-  project: { id: string; name: string; tasks: number } | null;
+  project: { id: string; name: string; tasks: number | null } | null;
   isPending: boolean;
   onConfirm: () => void;
   onClose: () => void;
@@ -28,10 +28,18 @@ export function DeleteProjectDialog({
       onClose={onClose}
       eyebrow={t("Backlog · projetos")}
       title={t("Apagar {0}?", { "0": project.name })}
-      intro={t(
-        "Este projeto tem {0} tarefa(s). Apagar o projeto apaga essas tarefas junto, e isso não se desfaz pela interface.",
-        { "0": String(project.tasks) },
-      )}
+      intro={
+        /* A contagem some quando o servidor recusou por tarefas que o quadro nao lista, as
+           arquivadas. Prometer um numero que nao se sabe seria pior que nao dar numero. */
+        project.tasks === null
+          ? t(
+              "Este projeto ainda tem tarefas, incluindo arquivadas que o quadro não lista. Apagar o projeto apaga essas tarefas junto, e isso não se desfaz pela interface.",
+            )
+          : t(
+              "Este projeto tem {0} tarefa(s). Apagar o projeto apaga essas tarefas junto, e isso não se desfaz pela interface.",
+              { "0": String(project.tasks) },
+            )
+      }
     >
       <div className={dialogActions}>
         <button type="button" onClick={onClose} className={cancelButton}>
