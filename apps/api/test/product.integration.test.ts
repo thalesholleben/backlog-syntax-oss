@@ -619,6 +619,217 @@ integration("product runtime with PostgreSQL 18", () => {
     stop();
   });
 
+  it("records task authorship, serves the execution queue and rate limits the poller", async () => {
+    const firstSession = await request("/api/auth/get-session", {
+      headers: { cookie: firstCookie },
+    });
+    const firstUserId = ((await firstSession.json()) as { user: { id: string } }).user.id;
+
+    // O balde e por principal e a janela e de 60s, entao um teste que faz varios polls
+    // esgota o orcamento. Limpar entre as fases mantem cada criterio medido isolado,
+    // em vez de um criterio mascarar o outro.
+    const resetQueueBudget = async () => {
+      const client = await pools.app.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query("SELECT private.set_request_context($1::uuid, 'user', $2::uuid)", [
+          firstWorkspace,
+          firstUserId,
+        ]);
+        await client.query("DELETE FROM domain.rate_limits WHERE tenant_id = $1::uuid", [
+          firstWorkspace,
+        ]);
+        await client.query("COMMIT");
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally {
+        client.release();
+      }
+    };
+
+    // A1: autoria de usuario, gravada pelo servidor a partir do principal autenticado.
+    const byUser = await jsonRequest(
+      `/v1/workspaces/${firstWorkspace}/tasks`,
+      firstCookie,
+      "POST",
+      { projectId, title: "Authored by the signed-in user", priority: "medium" },
+      { "idempotency-key": `authorship-user-${RUN_ID}` },
+    );
+    expect(byUser.status, await byUser.clone().text()).toBe(201);
+    const userTask = (await byUser.json()) as {
+      id: string;
+      createdBy: { subjectType: string; subjectId: string } | null;
+    };
+    expect(userTask.createdBy).toEqual({ subjectType: "user", subjectId: firstUserId });
+
+    // A1: autoria de service account, pelo mesmo caminho, com token proprio.
+    const agentAccount = await jsonRequest(
+      `/v1/workspaces/${firstWorkspace}/service-accounts`,
+      firstCookie,
+      "POST",
+      { name: "Queue agent" },
+    );
+    expect(agentAccount.status).toBe(201);
+    const agentAccountId = ((await agentAccount.json()) as { id: string }).id;
+    const agentToken = await jsonRequest(
+      `/v1/workspaces/${firstWorkspace}/api-tokens`,
+      firstCookie,
+      "POST",
+      { serviceAccountId: agentAccountId, name: "Queue token", scopes: ["read", "write"] },
+    );
+    expect(agentToken.status).toBe(201);
+    const agentBearer = ((await agentToken.json()) as { token: string }).token;
+
+    const byAgent = await request(`/v1/workspaces/${firstWorkspace}/tasks`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${agentBearer}`,
+        "content-type": "application/json",
+        "idempotency-key": `authorship-agent-${RUN_ID}`,
+      },
+      body: JSON.stringify({ projectId, title: "Authored by the agent", priority: "medium" }),
+    });
+    expect(byAgent.status, await byAgent.clone().text()).toBe(201);
+    const agentTask = (await byAgent.json()) as {
+      id: string;
+      createdBy: { subjectType: string; subjectId: string } | null;
+    };
+    expect(agentTask.createdBy).toEqual({
+      subjectType: "service_account",
+      subjectId: agentAccountId,
+    });
+
+    // A2: autoria nao e forjavel pelo corpo. O schema e .strict(), e a politica de
+    // validacao do servidor responde 422, nao 400.
+    const forged = await jsonRequest(
+      `/v1/workspaces/${firstWorkspace}/tasks`,
+      firstCookie,
+      "POST",
+      {
+        projectId,
+        title: "Forged authorship",
+        priority: "medium",
+        createdBy: { subjectType: "user", subjectId: firstUserId },
+      },
+      { "idempotency-key": `authorship-forged-${RUN_ID}` },
+    );
+    expect(forged.status).toBe(422);
+    expect((await forged.json()) as object).toHaveProperty("code", "invalid_request");
+
+    // A3: tarefa anterior a esta versao nao tem autor atribuivel e continua legivel.
+    const legacyClient = await pools.app.connect();
+    let legacyTaskId = "";
+    try {
+      await legacyClient.query("BEGIN");
+      await legacyClient.query("SELECT private.set_request_context($1::uuid, 'user', $2::uuid)", [
+        firstWorkspace,
+        firstUserId,
+      ]);
+      const inserted = await legacyClient.query<{ task_id: string }>(
+        `INSERT INTO domain.tasks (tenant_id, project_id, title, priority)
+         VALUES ($1::uuid, $2::uuid, 'Task created before authorship existed', 'medium')
+         RETURNING task_id`,
+        [firstWorkspace, projectId],
+      );
+      legacyTaskId = inserted.rows[0]?.task_id ?? "";
+      await legacyClient.query("COMMIT");
+    } catch (error) {
+      await legacyClient.query("ROLLBACK");
+      throw error;
+    } finally {
+      legacyClient.release();
+    }
+    expect(legacyTaskId).not.toBe("");
+    const legacyRead = await request(`/v1/workspaces/${firstWorkspace}/tasks/${legacyTaskId}`, {
+      headers: { cookie: firstCookie },
+    });
+    expect(legacyRead.status).toBe(200);
+    expect((await legacyRead.json()) as object).toHaveProperty("createdBy", null);
+
+    // B1: a fila devolve as tarefas abertas e sem claim ativo do projeto.
+    await resetQueueBudget();
+    const queueUrl = `/v1/workspaces/${firstWorkspace}/task-queue?projectId=${projectId}`;
+    const firstPoll = await request(queueUrl, { headers: { cookie: firstCookie } });
+    expect(firstPoll.status, await firstPoll.clone().text()).toBe(200);
+    const queued = ((await firstPoll.json()) as { data: Array<{ id: string; status: string }> })
+      .data;
+    expect(queued.every((task) => task.status === "open")).toBe(true);
+    expect(queued.map((task) => task.id)).toContain(userTask.id);
+
+    // C1: a segunda chamada do MESMO principal, dentro da janela, e recusada com o
+    // tempo de espera anunciado.
+    const throttled = await request(queueUrl, { headers: { cookie: firstCookie } });
+    expect(throttled.status).toBe(429);
+    expect((await throttled.clone().json()) as object).toHaveProperty("code", "rate_limited");
+    const retryAfter = Number(throttled.headers.get("retry-after"));
+    expect(Number.isInteger(retryAfter)).toBe(true);
+    expect(retryAfter).toBeGreaterThan(0);
+    expect(retryAfter).toBeLessThanOrEqual(60);
+
+    // C2: o balde e por identidade, entao o agente tem orcamento proprio.
+    const agentPoll = await request(queueUrl, {
+      headers: { authorization: `Bearer ${agentBearer}` },
+    });
+    expect(agentPoll.status, await agentPoll.clone().text()).toBe(200);
+
+    // B2: reivindicar tira a tarefa da fila.
+    await resetQueueBudget();
+    const claimed = await jsonRequest(
+      `/v1/workspaces/${firstWorkspace}/tasks/${userTask.id}/claim`,
+      firstCookie,
+      "POST",
+      { leaseSeconds: 600 },
+      { "if-match": '"1"', "idempotency-key": `queue-claim-${RUN_ID}` },
+    );
+    expect(claimed.status, await claimed.clone().text()).toBe(200);
+    const afterClaim = await request(queueUrl, { headers: { cookie: firstCookie } });
+    expect(afterClaim.status).toBe(200);
+    expect(
+      ((await afterClaim.json()) as { data: Array<{ id: string }> }).data.map((task) => task.id),
+    ).not.toContain(userTask.id);
+
+    // B3: o motivo de a fila ser consulta de estado, e nao janela de tempo. Uma
+    // transacao aberta durante o poll e comitada depois precisa aparecer no poll
+    // seguinte. Com marco temporal essa linha se perderia para sempre.
+    await resetQueueBudget();
+    const lateClient = await pools.app.connect();
+    try {
+      await lateClient.query("BEGIN");
+      await lateClient.query("SELECT private.set_request_context($1::uuid, 'user', $2::uuid)", [
+        firstWorkspace,
+        firstUserId,
+      ]);
+      const lateInsert = await lateClient.query<{ task_id: string }>(
+        `INSERT INTO domain.tasks (tenant_id, project_id, title, priority)
+         VALUES ($1::uuid, $2::uuid, 'Committed after the poll', 'medium')
+         RETURNING task_id`,
+        [firstWorkspace, projectId],
+      );
+      const lateTaskId = lateInsert.rows[0]?.task_id ?? "";
+      expect(lateTaskId).not.toBe("");
+
+      const duringTransaction = await request(queueUrl, { headers: { cookie: firstCookie } });
+      expect(duringTransaction.status).toBe(200);
+      expect(
+        ((await duringTransaction.json()) as { data: Array<{ id: string }> }).data.map(
+          (task) => task.id,
+        ),
+      ).not.toContain(lateTaskId);
+
+      await lateClient.query("COMMIT");
+
+      await resetQueueBudget();
+      const afterCommit = await request(queueUrl, { headers: { cookie: firstCookie } });
+      expect(afterCommit.status).toBe(200);
+      expect(
+        ((await afterCommit.json()) as { data: Array<{ id: string }> }).data.map((task) => task.id),
+      ).toContain(lateTaskId);
+    } finally {
+      lateClient.release();
+    }
+  });
+
   it("exports personal and tenant data, then deletes only the requesting identity", async () => {
     const accountExport = await request("/v1/account/export", {
       headers: { cookie: firstCookie },
@@ -695,6 +906,55 @@ integration("product runtime with PostgreSQL 18", () => {
       [accountPayload.account.id],
     );
     expect(removedIdentity.rows[0]).toEqual({ better_auth_exists: false, legacy_active: false });
+
+    // A4: autoria e um identificador pessoal, entao precisa ser anonimizada junto com
+    // os demais rastros, e os baldes do usuario precisam sumir. Sem isso a autoria
+    // sobreviveria a exclusao da conta por omissao.
+    const residueClient = await pools.app.connect();
+    let privacyResidue:
+      | {
+          authored_rows: string;
+          anonymized_rows: string;
+          buckets: string;
+        }
+      | undefined;
+    try {
+      await residueClient.query("BEGIN");
+      // backlog_app e NOBYPASSRLS: sem contexto de tenant a consulta devolve zero para
+      // tudo e o assert passaria vazio. O segundo usuario e o dono remanescente.
+      await residueClient.query("SELECT private.set_request_context($1::uuid, 'user', $2::uuid)", [
+        firstWorkspace,
+        secondUserId,
+      ]);
+      const residue = await residueClient.query<{
+        authored_rows: string;
+        anonymized_rows: string;
+        buckets: string;
+      }>(
+        `SELECT
+           (SELECT count(*) FROM domain.tasks
+             WHERE created_by_subject_type = 'user' AND created_by_subject_id = $1::uuid)
+             AS authored_rows,
+           (SELECT count(*) FROM domain.tasks
+             WHERE created_by_subject_type = 'user'
+               AND created_by_subject_id = '00000000-0000-0000-0000-000000000000'::uuid)
+             AS anonymized_rows,
+           (SELECT count(*) FROM domain.rate_limits
+             WHERE subject_type = 'user' AND subject_id = $1::uuid)
+             AS buckets`,
+        [accountPayload.account.id],
+      );
+      privacyResidue = residue.rows[0];
+      await residueClient.query("COMMIT");
+    } catch (error) {
+      await residueClient.query("ROLLBACK");
+      throw error;
+    } finally {
+      residueClient.release();
+    }
+    expect(Number(privacyResidue?.authored_rows)).toBe(0);
+    expect(Number(privacyResidue?.anonymized_rows)).toBeGreaterThan(0);
+    expect(Number(privacyResidue?.buckets)).toBe(0);
     const retainedWorkspace = await request(`/v1/workspaces/${firstWorkspace}/export`, {
       headers: { cookie: secondCookie },
     });

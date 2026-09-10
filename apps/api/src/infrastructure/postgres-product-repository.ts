@@ -84,6 +84,8 @@ interface TaskRow extends QueryResultRow {
   created_at: Date;
   updated_at: Date;
   archived_at: Date | null;
+  created_by_subject_type?: TaskClaim["subjectType"] | null;
+  created_by_subject_id?: string | null;
   claim_subject_type?: TaskClaim["subjectType"] | null;
   claim_subject_id?: string | null;
   claim_lease_expires_at?: Date | null;
@@ -187,6 +189,10 @@ function taskFromRow(row: TaskRow): Task {
     createdAt: toIso(row.created_at),
     updatedAt: toIso(row.updated_at),
     archivedAt: row.archived_at ? toIso(row.archived_at) : null,
+    createdBy:
+      row.created_by_subject_type && row.created_by_subject_id
+        ? { subjectType: row.created_by_subject_type, subjectId: row.created_by_subject_id }
+        : null,
     claimedBy:
       row.claim_subject_type && row.claim_subject_id && row.claim_lease_expires_at
         ? {
@@ -608,6 +614,7 @@ export class PostgresProductRepository {
            task.status, task.priority, task.blocked_reason, task.scheduled_date, task.due_date,
            task.position, task.version,
            task.created_at, task.updated_at, task.archived_at,
+           task.created_by_subject_type, task.created_by_subject_id,
            claim.subject_type AS claim_subject_type,
            claim.subject_id AS claim_subject_id,
            claim.lease_expires_at AS claim_lease_expires_at
@@ -808,6 +815,100 @@ export class PostgresProductRepository {
     });
   }
 
+  /**
+   * Fila de execucao: o estado presente, nao uma janela de tempo.
+   *
+   * Um marco temporal perde a tarefa cuja transacao comita depois do poll, porque o
+   * marco ja avancou alem do timestamp gravado e aquela linha nunca mais volta. Aqui
+   * nao ha marco, entao uma transacao que comita tarde simplesmente aparece no poll
+   * seguinte. O claim e que tira a tarefa da fila, e um lease expirado a devolve, que
+   * e o comportamento correto para trabalho abandonado.
+   *
+   * O predicado casa com idx_tasks_project_status_position, que ja existe.
+   */
+  public async listTaskQueue(
+    workspaceId: string,
+    principal: Principal,
+    input: { projectId: string; limit: number },
+  ): Promise<Task[]> {
+    return this.transaction(async (client) => {
+      await this.setTenantContext(client, workspaceId, principal);
+      const result = await client.query<TaskRow>(
+        `SELECT task.task_id, task.tenant_id, task.project_id, task.title, task.description,
+                task.status, task.priority, task.blocked_reason, task.scheduled_date, task.due_date,
+                task.position, task.version,
+                task.created_at, task.updated_at, task.archived_at,
+                task.created_by_subject_type, task.created_by_subject_id,
+                NULL::domain.subject_type AS claim_subject_type,
+                NULL::uuid AS claim_subject_id,
+                NULL::timestamptz AS claim_lease_expires_at
+         FROM domain.tasks AS task
+         WHERE task.tenant_id = $1::uuid AND task.project_id = $2::uuid
+           AND task.status = 'open'
+           AND task.archived_at IS NULL AND task.deleted_at IS NULL
+           AND NOT EXISTS (
+             SELECT 1 FROM domain.task_claims AS claim
+             WHERE claim.tenant_id = task.tenant_id AND claim.task_id = task.task_id
+               AND claim.released_at IS NULL AND claim.deleted_at IS NULL
+               AND claim.lease_expires_at > now()
+           )
+         ORDER BY task.position, task.task_id
+         LIMIT $3::integer`,
+        [workspaceId, input.projectId, input.limit],
+      );
+      return result.rows.map(taskFromRow);
+    });
+  }
+
+  /**
+   * Balde de janela fixa por principal, decidido numa unica instrucao atomica.
+   *
+   * O caminho negado tambem precisa do inicio da janela, senao nao ha como calcular
+   * Retry-After, entao o RETURNING devolve a janela nos dois casos. Vive no Postgres
+   * porque memoria de processo concede um orcamento por replica e faria o limite
+   * anunciado no contrato deixar de valer assim que a API escalasse.
+   */
+  public async consumeRateLimit(
+    workspaceId: string,
+    principal: Principal,
+    bucket: string,
+    windowSeconds: number,
+  ): Promise<{ allowed: boolean; retryAfterSeconds: number }> {
+    return this.transaction(async (client) => {
+      await this.setTenantContext(client, workspaceId, principal);
+      const result = await client.query<{ allowed: boolean; retry_after_seconds: number }>(
+        `INSERT INTO domain.rate_limits AS bucket_row
+           (tenant_id, subject_type, subject_id, bucket, window_started_at)
+         VALUES ($1::uuid, $2::domain.subject_type, $3::uuid, $4, now())
+         ON CONFLICT (tenant_id, subject_type, subject_id, bucket) DO UPDATE
+           SET window_started_at = CASE
+                 WHEN bucket_row.window_started_at <= now() - ($5::integer * interval '1 second')
+                   THEN now()
+                 ELSE bucket_row.window_started_at
+               END
+         RETURNING
+           bucket_row.window_started_at = now() AS allowed,
+           GREATEST(
+             0,
+             ceil(
+               extract(
+                 epoch FROM (
+                   bucket_row.window_started_at + ($5::integer * interval '1 second') - now()
+                 )
+               )
+             )
+           )::integer AS retry_after_seconds`,
+        [workspaceId, principal.subjectType, principal.subjectId, bucket, windowSeconds],
+      );
+      const row = result.rows[0];
+      if (!row) throw new DomainError("internal_error", 500, "Rate limit was not evaluated");
+      return {
+        allowed: row.allowed,
+        retryAfterSeconds: row.allowed ? 0 : Math.max(1, row.retry_after_seconds),
+      };
+    });
+  }
+
   public async listTasks(
     workspaceId: string,
     principal: Principal,
@@ -826,6 +927,7 @@ export class PostgresProductRepository {
                 task.status, task.priority, task.blocked_reason, task.scheduled_date, task.due_date,
                 task.position, task.version,
                 task.created_at, task.updated_at, task.archived_at,
+                task.created_by_subject_type, task.created_by_subject_id,
                 claim.subject_type AS claim_subject_type,
                 claim.subject_id AS claim_subject_id,
                 claim.lease_expires_at AS claim_lease_expires_at
@@ -859,6 +961,7 @@ export class PostgresProductRepository {
                 task.status, task.priority, task.blocked_reason, task.scheduled_date, task.due_date,
                 task.position, task.version,
                 task.created_at, task.updated_at, task.archived_at,
+                task.created_by_subject_type, task.created_by_subject_id,
                 claim.subject_type AS claim_subject_type,
                 claim.subject_id AS claim_subject_id,
                 claim.lease_expires_at AS claim_lease_expires_at
@@ -898,16 +1001,17 @@ export class PostgresProductRepository {
             const result = await client.query<TaskRow>(
               `INSERT INTO domain.tasks (
                  tenant_id, project_id, title, description, priority, scheduled_date, due_date,
-                 position
+                 created_by_subject_type, created_by_subject_id, position
                )
                SELECT $1::uuid, $2::uuid, $3, $4, $5::domain.task_priority, $6::date, $7::date,
+                 $8::domain.subject_type, $9::uuid,
                  COALESCE(max(task.position), 0) + 1000
                FROM domain.tasks AS task
                WHERE task.tenant_id = $1::uuid AND task.project_id = $2::uuid
                  AND task.deleted_at IS NULL
                RETURNING task_id, tenant_id, project_id, title, description, status, priority,
                  blocked_reason, scheduled_date, due_date, position, version, created_at,
-                 updated_at, archived_at`,
+                 updated_at, archived_at, created_by_subject_type, created_by_subject_id`,
               [
                 workspaceId,
                 input.projectId,
@@ -916,6 +1020,8 @@ export class PostgresProductRepository {
                 input.priority,
                 input.scheduledDate ?? null,
                 input.dueDate ?? null,
+                principal.subjectType,
+                principal.subjectId,
               ],
             );
             const row = result.rows[0];
@@ -982,7 +1088,7 @@ export class PostgresProductRepository {
                  AND version = $3 AND archived_at IS NULL AND deleted_at IS NULL
                RETURNING task_id, tenant_id, project_id, title, description, status, priority,
                  blocked_reason, scheduled_date, due_date, position, version, created_at,
-                 updated_at, archived_at`,
+                 updated_at, archived_at, created_by_subject_type, created_by_subject_id`,
               values,
             );
             const row = result.rows[0];

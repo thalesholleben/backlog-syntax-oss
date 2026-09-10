@@ -157,6 +157,7 @@ const task: Task = {
   blockedReason: null,
   scheduledDate: null,
   dueDate: null,
+  createdBy: null,
   claimedBy: null,
   archivedAt: null,
   createdAt: "2026-09-01T12:00:00Z",

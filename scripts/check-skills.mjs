@@ -32,7 +32,7 @@ for (const path of [
 
 // setup.md is deliberately different: connecting differs per client. The transport
 // references are one text and must stay byte-identical across both variants.
-for (const shared of ["references/api.md", "references/mcp.md"]) {
+for (const shared of ["references/api.md", "references/mcp.md", "references/monitors.md"]) {
   const left = join(claudeCode, shared);
   const right = join(codex, shared);
   if (!existsSync(left) || !existsSync(right)) {

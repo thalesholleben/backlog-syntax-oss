@@ -25,7 +25,8 @@ DECLARE
     'task_events',
     'task_handoffs',
     'idempotency_keys',
-    'deletion_requests'
+    'deletion_requests',
+    'rate_limits'
   ];
 BEGIN
   SELECT count(*)
@@ -94,7 +95,8 @@ DECLARE
     'task_events',
     'task_handoffs',
     'idempotency_keys',
-    'deletion_requests'
+    'deletion_requests',
+    'rate_limits'
   ];
 BEGIN
   FOREACH table_name IN ARRAY tenant_tables LOOP
@@ -192,7 +194,8 @@ DECLARE
     'task_events',
     'task_handoffs',
     'idempotency_keys',
-    'deletion_requests'
+    'deletion_requests',
+    'rate_limits'
   ];
 BEGIN
   FOREACH table_name IN ARRAY new_tenant_tables LOOP

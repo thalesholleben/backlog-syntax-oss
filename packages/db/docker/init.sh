@@ -32,6 +32,8 @@ psql --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" \
   --file=/migrations/009_idempotency_housekeeping.sql
 psql --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" \
   --file=/migrations/010_task_schedule.sql
+psql --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" \
+  --file=/migrations/011_task_authorship_and_rate_limits.sql
 
 if [ -f /seeds/001_two_tenants.sql ]; then
   psql --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" \

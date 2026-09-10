@@ -167,6 +167,8 @@ export const tasks = domainSchema.table(
     priority: taskPriority("priority").notNull().default("medium"),
     assigneeSubjectType: subjectType("assignee_subject_type"),
     assigneeSubjectId: uuid("assignee_subject_id"),
+    createdBySubjectType: subjectType("created_by_subject_type"),
+    createdBySubjectId: uuid("created_by_subject_id"),
     blockedReason: text("blocked_reason"),
     scheduledDate: date("scheduled_date"),
     dueDate: date("due_date"),
@@ -223,5 +225,29 @@ export const apiTokens = domainSchema.table(
     index("idx_api_tokens_service_account")
       .on(table.tenantId, table.serviceAccountId)
       .where(sql`${table.deletedAt} is null`),
+  ],
+);
+
+export const rateLimits = domainSchema.table(
+  "rate_limits",
+  {
+    tenantId: uuid("tenant_id").notNull(),
+    subjectType: subjectType("subject_type").notNull(),
+    subjectId: uuid("subject_id").notNull(),
+    bucket: text("bucket").notNull(),
+    windowStartedAt: timestamp("window_started_at", { withTimezone: true }).notNull().defaultNow(),
+    ...auditColumns,
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.tenantId, table.subjectType, table.subjectId, table.bucket],
+      name: "rate_limits_pkey",
+    }),
+    foreignKey({
+      columns: [table.tenantId],
+      foreignColumns: [workspaces.tenantId],
+      name: "rate_limits_tenant_fkey",
+    }).onDelete("cascade"),
+    index("idx_rate_limits_window").on(table.windowStartedAt),
   ],
 );
