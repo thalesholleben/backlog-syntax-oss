@@ -403,11 +403,14 @@ select:focus-visible,
     radial-gradient(820px 460px at 6% -10%, var(--glow-2), transparent 60%);
 }
 
-/* Backdrop and entry animation for native <dialog>-based drawers and modals. */
+/* Backdrop and entry animation for native <dialog>-based drawers and modals.
+   O fundo fica com quem usa: um <dialog> que é o próprio painel pede `bg-surface`, e um
+   que só posiciona um painel interno pede `bg-transparent`. Zerar o fundo aqui parecia
+   inofensivo e não era: a regra vence a utilitária, então o painel declarado como opaco
+   renderizava vazado e o quadro aparecia através do modal. */
 dialog.bl-dialog {
   padding: 0;
   border: none;
-  background: transparent;
   color: inherit;
   max-width: none;
   max-height: none;

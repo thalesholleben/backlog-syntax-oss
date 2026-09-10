@@ -62,7 +62,7 @@ export function Dialog({
   return createPortal(
     <dialog
       ref={ref}
-      className="bl-dialog fixed inset-0 m-0 h-dvh max-h-none w-dvw max-w-none"
+      className="bl-dialog fixed inset-0 m-0 h-dvh max-h-none w-dvw max-w-none bg-transparent"
       aria-label={title}
       onClose={onClose}
     >
