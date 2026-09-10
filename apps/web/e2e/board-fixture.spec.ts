@@ -326,6 +326,60 @@ test("on a narrow screen the columns stack and the page never scrolls sideways",
   expect(overflow).toBeLessThanOrEqual(1);
 });
 
+test("DEBUG who overflows at 320", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.route(`**/v1/workspaces/${workspaceId}/tasks?*`, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: [task()], page: { nextCursor: null, hasMore: false } }),
+    }),
+  );
+
+  await page.goto(`/w/${workspace.slug}`);
+  await expect(page.getByRole("heading", { name: "Aberto" })).toBeVisible();
+  await page.waitForTimeout(500);
+
+  const report = await page.evaluate(() => {
+    const client = document.documentElement.clientWidth;
+    const lines: string[] = [];
+    lines.push(
+      `VIEWPORT client=${client} scroll=${document.documentElement.scrollWidth} bodyScroll=${document.body.scrollWidth}`,
+    );
+    for (const font of Array.from(document.fonts)) {
+      lines.push(`FONT ${font.family} ${font.weight} ${font.style} ${font.status}`);
+    }
+    for (const element of Array.from(document.querySelectorAll("*"))) {
+      const rect = element.getBoundingClientRect();
+      if (rect.right > client + 0.5 && rect.width > 0) {
+        const style = getComputedStyle(element);
+        lines.push(
+          [
+            "OVER",
+            element.tagName,
+            `right=${rect.right.toFixed(2)}`,
+            `left=${rect.left.toFixed(2)}`,
+            `w=${rect.width.toFixed(2)}`,
+            `scrollW=${element.scrollWidth}`,
+            `font=${style.fontFamily.slice(0, 44)}`,
+            `size=${style.fontSize}`,
+            `ws=${style.whiteSpace}`,
+            `cls=${String(element.className).slice(0, 130)}`,
+            `text=${(element.textContent || "").replace(/\s+/g, " ").trim().slice(0, 44)}`,
+          ].join(" | "),
+        );
+      }
+    }
+    return lines;
+  });
+
+  console.log("OVERFLOW_REPORT_START");
+  for (const line of report) {
+    console.log(line);
+  }
+  console.log("OVERFLOW_REPORT_END");
+});
+
 test("workspace navigation remains visible across the former breakpoint gap", async ({ page }) => {
   await page.route(`**/v1/workspaces/${workspaceId}/tasks?*`, (route) =>
     route.fulfill({
