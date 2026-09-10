@@ -326,6 +326,34 @@ test("on a narrow screen the columns stack and the page never scrolls sideways",
   expect(overflow).toBeLessThanOrEqual(1);
 });
 
+/* A largura do rotulo de envelhecimento cresce com a idade da tarefa, e uma fixture de data
+   fixa envelhece sozinha: o caso longo precisa ser pedido, nunca esperado do calendário. */
+test("a three-digit aging label still does not push the narrow board sideways", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  const longAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
+  await page.route(`**/v1/workspaces/${workspaceId}/tasks?*`, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        data: [task({ createdAt: longAgo, updatedAt: longAgo })],
+        page: { nextCursor: null, hasMore: false },
+      }),
+    }),
+  );
+
+  await page.goto(`/w/${workspace.slug}`);
+  await expect(page.getByRole("heading", { name: "Aberto" })).toBeVisible();
+  await expect(page.getByText(/mais antiga \d{3} dias/)).toBeVisible();
+
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+});
+
 test("workspace navigation remains visible across the former breakpoint gap", async ({ page }) => {
   await page.route(`**/v1/workspaces/${workspaceId}/tasks?*`, (route) =>
     route.fulfill({
