@@ -291,7 +291,7 @@ function AgingHead({ scale }: { scale: string }) {
           {STALE_LIMIT_DAYS} {t("dias a etiqueta do card fica vermelha.")}
         </p>
       </div>
-      <p className="shrink-0 rounded-full bg-panel px-3.5 py-[7px] font-mono text-[9.5px] font-semibold uppercase leading-none tracking-[0.12em] text-faint">
+      <p className="max-w-full rounded-full bg-panel px-3.5 py-[7px] font-mono text-[9.5px] font-semibold uppercase leading-[1.35] tracking-[0.12em] text-faint sm:shrink-0 sm:leading-none">
         {scale}
       </p>
     </div>
