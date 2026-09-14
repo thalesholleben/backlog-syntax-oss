@@ -132,7 +132,7 @@ export const english = {
     "Organize o backlog e a agenda semanal no mesmo workspace. Cada agente tem identidade própria, assume tarefas com prazo e registra evidências. Tudo conectado pela interface, pela API REST e pelo MCP.":
       "Plan your backlog and weekly tasks in one workspace. Give each agent its own identity, claim tasks with an expiration time and record evidence. Use the web app, connect your tools or self-host the MIT-licensed source.",
     "Criar conta grátis": "Create a free account",
-    "Abrir o quadro": "Open your board",
+    "Ver no GitHub": "View on GitHub",
     "Já disponível no navegador, sem instalar nada. Versão hospedada gratuita, em evolução e sem SLA. Os limites do serviço estão na página de transparência.":
       "Available in your browser, with no installation required. The free hosted service is under active development and has no SLA. See the transparency page for current limits.",
     "O agente já sabe trabalhar.": "Your agent can already do the work.",

@@ -86,6 +86,10 @@ for (const width of [320, 390, 820, 1024, 1280, 1440, 1920]) {
         "href",
         "/cadastro",
       );
+      await expect(hero.getByRole("link", { name: "Ver no GitHub" })).toHaveAttribute(
+        "href",
+        "https://github.com/thalesholleben/backlog-syntax-oss",
+      );
       await expect(page.locator("body")).not.toContainText(
         /vai ser gratuita quando entrar no ar|ainda está em construção|antes de o produto estar pronto/i,
       );
@@ -106,7 +110,7 @@ for (const width of [320, 390, 820, 1024, 1280, 1440, 1920]) {
             leadColor: getComputedStyle(section.querySelector("p.text-foreground") ?? title).color,
             supportingColor: getComputedStyle(section.querySelector("p.text-muted") ?? title).color,
             secondaryBackground: getComputedStyle(
-              section.querySelector('a[href="/entrar"]') ?? title,
+              section.querySelector('a[href^="https://github.com/"]') ?? title,
             ).backgroundColor,
             fit: getComputedStyle(image).objectFit,
             position: getComputedStyle(image).objectPosition,

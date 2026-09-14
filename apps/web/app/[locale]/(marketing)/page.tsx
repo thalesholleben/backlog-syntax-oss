@@ -352,12 +352,14 @@ export default async function HomePage() {
               >
                 {t("Criar conta grátis")}
               </Link>
-              <Link
-                href="/entrar"
+              {/* "Abrir o quadro" ja mora no header. O GitHub do header some abaixo de sm,
+                  entao no celular a hero e o unico lugar em que o repositorio aparece. */}
+              <a
+                href={site.github}
                 className="inline-flex min-h-12 items-center justify-center rounded-full border border-line bg-surface px-6 text-center font-bold transition-colors hover:bg-panel"
               >
-                {t("Abrir o quadro")}
-              </Link>
+                {t("Ver no GitHub")}
+              </a>
             </div>
             <p className="mt-5 max-w-lg text-sm leading-6 text-faint">
               {t(
