@@ -10,7 +10,7 @@ implemented controls and remaining limits; they are not a certification of legal
 - [Subprocessors and international transfers](subprocessors.md)
 - [Incident response runbook](../runbooks/incident-response.md)
 
-Hosting/database: Hostinger São Paulo; edge protection: Cloudflare global network;
+Hosting/database: Hostinger Boston, United States (international transfer, contract performance basis, LGPD art. 33, IX; Hostinger DPA reviewed, ANPD standard clauses requested); edge protection: Cloudflare global network;
 offsite launch/maintenance backup: existing Google Drive destination. Hostinger already runs
 weekly VPS backups; the EasyPanel free plan does not execute database backup schedules.
 Email/OAuth providers are not enabled.

@@ -64,7 +64,7 @@ const sections = (t: Translator) =>
       content: (
         <p>
           {t(
-            "Login Google e e-mail transacional dependem de configuração futura. Hospedagem e banco ficam em São Paulo, na Hostinger, com proteção da Cloudflare. A VPS tem backup semanal automático; cópias do banco são feitas no lançamento e em manutenções, na VPS e no Google Drive. Não há backup diário automático do banco. Suporte e privacidade usam contato@syntaxlab.com.br. Mantenha uma exportação dos dados importantes; o roadmap não é uma promessa de funcionalidade ou prazo.",
+            "Login Google e e-mail transacional dependem de configuração futura. Hospedagem e banco ficam em Boston, Estados Unidos, na Hostinger, com proteção da Cloudflare; a transferência internacional está descrita na política de privacidade. A VPS tem backup semanal automático; cópias do banco são feitas no lançamento e em manutenções, na VPS e no Google Drive. Não há backup diário automático do banco. Suporte e privacidade usam contato@syntaxlab.com.br. Mantenha uma exportação dos dados importantes; o roadmap não é uma promessa de funcionalidade ou prazo.",
           )}
         </p>
       ),
