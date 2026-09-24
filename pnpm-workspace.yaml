@@ -10,4 +10,5 @@ minimumReleaseAgeExclude:
   - lucide-react@1.38.0
 
 patchedDependencies:
+  '@better-auth/oauth-provider@1.7.2': patches/@better-auth__oauth-provider@1.7.2.patch
   next@16.3.3: patches/next@16.3.3.patch
