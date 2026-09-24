@@ -55,3 +55,29 @@ not the full Claude Desktop authorization flow. That document is a diagnostic ta
 not a client allowlist or an MCP server URL. After an authorized API deployment, retry
 the actual connector in Claude Desktop. If it still fails, inspect its actual `client_id`
 and the upstream HTTP result without logging OAuth codes, state, cookies or tokens.
+
+## Loopback redirect port variance
+
+Native MCP clients register a portless loopback callback and listen on an ephemeral port.
+Claude Code's CIMD document lists `http://localhost/callback` and
+`http://127.0.0.1/callback`, then sends `http://localhost:<port>/callback`. Better Auth
+1.7.2 ignored the port only for loopback IP literals, so that request failed with
+`invalid_redirect`. RFC 8252 §7.3 requires any port for loopback redirects.
+
+`patches/@better-auth__oauth-provider@1.7.2.patch` backports upstream
+[better-auth#11090](https://github.com/better-auth/better-auth/pull/11090), released in
+1.7.3, byte for byte. Only the port may vary, only for `http:` on `localhost`,
+`127.0.0.0/8` or `[::1]`. Scheme, host spelling, userinfo, path, query and fragment must
+match the registered URI exactly, and the token endpoint still requires the exact
+`redirect_uri` bound to the code, port included.
+
+The dependency stays on 1.7.2 because 1.7.3 also reverts the `account` table from
+`(issuer, accountId)` to `(providerId, accountId)` and validates the schema at startup,
+rejecting auth requests on mismatch. That needs its own migration and release. Remove this
+patch in the same change that upgrades Better Auth to 1.7.3 or later.
+
+The product integration suite covers accepted ports and every rejected variation:
+
+```bash
+pnpm test:integration
+```

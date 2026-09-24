@@ -17,6 +17,9 @@ const WEB_ORIGIN = "https://web.integration.test";
 const API_ORIGIN = "https://api.integration.test";
 const CLIENT_ID = "https://agent.integration.test/client-metadata.json";
 const REDIRECT_URI = "http://127.0.0.1:43112/callback";
+/* Mirrors the portless loopback redirects Claude Code publishes in its CIMD document. */
+const NATIVE_CLIENT_ID = "https://native-agent.integration.test/client-metadata.json";
+const NATIVE_REDIRECT_URIS = ["http://localhost/callback", "http://127.0.0.1/callback"];
 const MCP_VERSION = "2026-07-28";
 const AUTH_SECRET =
   process.env["INTEGRATION_AUTH_SECRET"] ?? "integration-auth-secret-at-least-32-characters";
@@ -123,6 +126,16 @@ integration("product runtime with PostgreSQL 18", () => {
       authOptions: {
         fetchClientMetadataResource: async (input) => {
           const url = input instanceof Request ? input.url : input.toString();
+          if (url === NATIVE_CLIENT_ID) {
+            return Response.json({
+              client_id: NATIVE_CLIENT_ID,
+              client_name: "Backlog Syntax native loopback agent",
+              redirect_uris: NATIVE_REDIRECT_URIS,
+              token_endpoint_auth_method: "none",
+              grant_types: ["authorization_code", "refresh_token"],
+              response_types: ["code"],
+            });
+          }
           if (url !== CLIENT_ID) return new Response(null, { status: 404 });
           return Response.json({
             client_id: CLIENT_ID,
@@ -559,6 +572,98 @@ integration("product runtime with PostgreSQL 18", () => {
       patch: { status: "done" },
     })) as { status: string };
     expect(completed.status).toBe("done");
+  }, 30_000);
+
+  it("lets a native client use any port on its loopback callback, and nothing else", async () => {
+    const authorize = async (redirectUri: string) => {
+      const verifier = `v-${randomBytes(48).toString("base64url")}`;
+      const query = new URLSearchParams({
+        client_id: NATIVE_CLIENT_ID,
+        response_type: "code",
+        redirect_uri: redirectUri,
+        scope: "openid read",
+        resource: `${API_ORIGIN}/mcp`,
+        state: randomUUID(),
+        code_challenge: pkce(verifier),
+        code_challenge_method: "S256",
+      });
+      const first = await redirectFrom(
+        await request(`/api/auth/oauth2/authorize?${query}`, {
+          headers: { cookie: firstCookie, accept: "text/html" },
+        }),
+      );
+      const location =
+        first.pathname === "/consent"
+          ? await redirectFrom(
+              await jsonRequest("/api/auth/oauth2/consent", firstCookie, "POST", {
+                accept: true,
+                oauth_query: first.search,
+              }),
+            )
+          : first;
+      return { location, verifier };
+    };
+    const exchange = (code: string, verifier: string, redirectUri: string) =>
+      request("/api/auth/oauth2/token", {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          client_id: NATIVE_CLIENT_ID,
+          redirect_uri: redirectUri,
+          code,
+          code_verifier: verifier,
+          resource: `${API_ORIGIN}/mcp`,
+        }),
+      });
+
+    // What Claude Code sends: the registered localhost callback plus an ephemeral port.
+    for (const redirectUri of [
+      "http://localhost:54871/callback",
+      "http://127.0.0.1:54871/callback",
+    ]) {
+      const { location, verifier } = await authorize(redirectUri);
+      expect(`${location.origin}${location.pathname}`).toBe(redirectUri);
+      expect(location.searchParams.has("error")).toBe(false);
+      const code = location.searchParams.get("code") ?? "";
+      expect(code).toBeTruthy();
+      const token = await exchange(code, verifier, redirectUri);
+      expect(token.status, await token.clone().text()).toBe(200);
+      expect(((await token.json()) as TokenResponse).access_token).toBeTruthy();
+    }
+
+    // The code stays bound to the exact callback, port included.
+    const bound = await authorize("http://localhost:54871/callback");
+    const mismatch = await exchange(
+      bound.location.searchParams.get("code") ?? "",
+      bound.verifier,
+      "http://localhost:54872/callback",
+    );
+    expect(mismatch.status).toBe(400);
+
+    // Only the port may vary; any other change is refused on the server error page.
+    for (const redirectUri of [
+      "http://localhost:54871/other",
+      "http://localhost:54871/callback?source=other",
+      "https://localhost:54871/callback",
+      "http://tenant.localhost:54871/callback",
+      "http://localhost.evil.test:54871/callback",
+      "http://user:password@localhost:54871/callback",
+      "http://LOCALHOST:54871/callback",
+      "http://localhost:54871/x/../callback",
+      "http://127.1:54871/callback",
+      "http://127.0.0.1:54871/callback?",
+      "http://localhost:54871/callback#fragment",
+    ]) {
+      const { location } = await authorize(redirectUri);
+      expect(`${location.origin}${location.pathname}`, redirectUri).toBe(
+        `${API_ORIGIN}/api/auth/error`,
+      );
+      expect(["invalid_redirect", "invalid_request"], redirectUri).toContain(
+        location.searchParams.get("error"),
+      );
+      expect(location.searchParams.has("code"), redirectUri).toBe(false);
+    }
   }, 30_000);
 
   it("expires stale leases through the advisory-lock worker", async () => {
