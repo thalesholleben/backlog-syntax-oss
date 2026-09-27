@@ -144,6 +144,7 @@ try {
       "vitest",
       "run",
       "test/product.integration.test.ts",
+      "test/mcp-discovery.integration.test.ts",
     ],
     {
       ...process.env,
