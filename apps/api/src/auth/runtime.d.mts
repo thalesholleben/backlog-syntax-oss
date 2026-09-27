@@ -30,6 +30,8 @@ export interface ProductAuthOptions {
     input: string | URL | Request,
     init?: RequestInit,
   ) => Promise<Response>;
+  /* Better Auth enables its rate limiter only when NODE_ENV is production; tests opt in here. */
+  rateLimit?: { enabled: boolean };
 }
 
 export declare function assertPublicMetadataUrl(value: string): { url: URL; hostname: string };
@@ -58,6 +60,7 @@ export declare function createProductAuth(
   pool: Pool,
   config: Pick<
     ApiConfig,
+    | "AUTH_CLIENT_IP_HEADER"
     | "AUTH_SECRET"
     | "GOOGLE_CLIENT_ID"
     | "GOOGLE_CLIENT_SECRET"

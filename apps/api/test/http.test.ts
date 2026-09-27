@@ -48,6 +48,24 @@ describe("foundation HTTP surface", () => {
     ).toThrow("Production origins must use HTTPS");
   });
 
+  it("takes the client IP header as an optional header name", () => {
+    const base = {
+      AUTH_DATABASE_URL: "postgresql://auth:test@localhost:5432/backlog",
+      APP_DATABASE_URL: "postgresql://app:test@localhost:5432/backlog",
+      AUTH_SECRET: "test-secret-at-least-thirty-two-characters",
+    };
+    expect(parseConfig(base).AUTH_CLIENT_IP_HEADER).toBeUndefined();
+    expect(
+      parseConfig({ ...base, AUTH_CLIENT_IP_HEADER: "" }).AUTH_CLIENT_IP_HEADER,
+    ).toBeUndefined();
+    expect(
+      parseConfig({ ...base, AUTH_CLIENT_IP_HEADER: "CF-Connecting-IP" }).AUTH_CLIENT_IP_HEADER,
+    ).toBe("cf-connecting-ip");
+    for (const invalid of ["cf-connecting-ip, x-forwarded-for", "x real ip", "x-real-ip:"]) {
+      expect(() => parseConfig({ ...base, AUTH_CLIENT_IP_HEADER: invalid })).toThrow();
+    }
+  });
+
   it("keeps liveness independent from database readiness", async () => {
     const app = createFoundationApp({ config, readinessCheck: async () => false });
     expect((await app.request("/health")).status).toBe(200);

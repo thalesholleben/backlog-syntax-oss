@@ -272,6 +272,55 @@ integration("product runtime with PostgreSQL 18", () => {
     expect(allowed.status, await allowed.clone().text()).toBe(201);
   });
 
+  it("rate limits sign-in per client from the edge header, and shares one bucket without it", async () => {
+    const email = `rate-limited-${RUN_ID}@integration.test`;
+    const signIn = (
+      auth: { handler(request: Request): Promise<Response> },
+      headers: Record<string, string>,
+    ) =>
+      auth.handler(
+        new Request(`${API_ORIGIN}/api/auth/sign-in/email`, {
+          method: "POST",
+          headers: { "content-type": "application/json", origin: WEB_ORIGIN, ...headers },
+          body: JSON.stringify({ email, password: "Not-the-password-2026" }),
+        }),
+      );
+    /* The chain a CDN plus the panel's proxy produce: client first, edge hop last. */
+    const behindCdn = (client: string, edge: string) => ({
+      "cf-connecting-ip": client,
+      "x-forwarded-for": `${client}, ${edge}`,
+    });
+
+    const perClient = createProductAuth(
+      pools.auth,
+      { ...config, AUTH_CLIENT_IP_HEADER: "cf-connecting-ip" },
+      { rateLimit: { enabled: true } },
+    );
+    for (const edge of ["172.70.1.1", "172.70.1.2", "172.70.1.3"]) {
+      const attempt = await signIn(perClient, behindCdn("198.51.100.7", edge));
+      expect(attempt.status, await attempt.clone().text()).toBe(401);
+    }
+    /* A rotated x-forwarded-for does not buy the same client a fresh bucket. */
+    const rotated = await signIn(perClient, {
+      ...behindCdn("198.51.100.7", "172.70.1.4"),
+      "x-forwarded-for": "203.0.113.200",
+    });
+    expect(rotated.status).toBe(429);
+    expect(Number(rotated.headers.get("x-retry-after"))).toBeGreaterThan(0);
+    const otherClient = await signIn(perClient, behindCdn("203.0.113.9", "172.70.1.1"));
+    expect(otherClient.status, await otherClient.clone().text()).toBe(401);
+
+    /* Unconfigured, the two-hop chain resolves to no address. Better Auth keys that as
+       `127.0.0.1` under test and `no-trusted-ip` in production: one bucket for everyone. */
+    const shared = createProductAuth(pools.auth, config, { rateLimit: { enabled: true } });
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const response = await signIn(shared, behindCdn("198.51.100.8", "172.70.1.1"));
+      expect(response.status, await response.clone().text()).toBe(401);
+    }
+    const lockedOut = await signIn(shared, behindCdn("203.0.113.10", "172.70.1.1"));
+    expect(lockedOut.status).toBe(429);
+  });
+
   it("blocks BOLA and enforces tenant-bound PAT scopes", async () => {
     const bola = await request(`/v1/workspaces/${secondWorkspace}/tasks`, {
       headers: { cookie: firstCookie },

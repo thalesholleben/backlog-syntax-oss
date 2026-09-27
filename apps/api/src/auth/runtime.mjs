@@ -227,6 +227,13 @@ export function createProductAuth(pool, config, options = {}) {
       // automatic secure prefix would turn `__Host-backlog_session` into an invalid double prefix.
       useSecureCookies: false,
       database: { generateId: "uuid" },
+      // Behind a CDN the default `x-forwarded-for` carries two hops, which Better Auth refuses
+      // to guess from, so every client shared one rate-limit bucket per path. The edge's own
+      // client-address header restores per-client limits; it is opt-in because it is forgeable
+      // wherever the origin is reachable without passing through that edge.
+      ...(config.AUTH_CLIENT_IP_HEADER
+        ? { ipAddress: { ipAddressHeaders: [config.AUTH_CLIENT_IP_HEADER] } }
+        : {}),
       defaultCookieAttributes: {
         secure: secureCookies,
         httpOnly: true,
@@ -266,6 +273,7 @@ export function createProductAuth(pool, config, options = {}) {
     ...(!options.sendResetPassword
       ? { disabledPaths: ["/request-password-reset", "/reset-password"] }
       : {}),
+    ...(options.rateLimit ? { rateLimit: options.rateLimit } : {}),
     plugins: [
       jwt(),
       mcp({
