@@ -793,6 +793,45 @@ integration("product runtime with PostgreSQL 18", () => {
     stop();
   });
 
+  it("clears the IP address of expired sessions and keeps both rows", async () => {
+    const email = `session-address-${RUN_ID}@integration.test`;
+    await signUpFresh(email);
+    const owner = await pools.auth.query<{ id: string }>(
+      `SELECT id FROM auth."user" WHERE email = $1`,
+      [email],
+    );
+    const userId = owner.rows[0]?.id;
+    expect(userId).toBeTruthy();
+    const expiredToken = `expired-${randomUUID()}`;
+    const activeToken = `active-${randomUUID()}`;
+    await pools.auth.query(
+      `INSERT INTO auth.session ("expiresAt", token, "updatedAt", "ipAddress", "userAgent", "userId")
+       VALUES (now() - interval '1 minute', $1, now(), '198.51.100.20', 'integration', $3::uuid),
+              (now() + interval '1 hour', $2, now(), '198.51.100.21', 'integration', $3::uuid)`,
+      [expiredToken, activeToken, userId],
+    );
+    const addresses = async () =>
+      Object.fromEntries(
+        (
+          await pools.auth.query<{ token: string; ipAddress: string | null }>(
+            `SELECT token, "ipAddress" FROM auth.session WHERE token = ANY($1::text[])`,
+            [[expiredToken, activeToken]],
+          )
+        ).rows.map((row) => [row.token, row.ipAddress]),
+      );
+
+    const stop = startLeaseHousekeeping(pools.app, 1_000, pools.auth);
+    try {
+      await vi.waitFor(async () => expect((await addresses())[expiredToken]).toBeNull(), {
+        timeout: 5_000,
+        interval: 250,
+      });
+    } finally {
+      stop();
+    }
+    expect(await addresses()).toEqual({ [expiredToken]: null, [activeToken]: "198.51.100.21" });
+  });
+
   it("records task authorship, serves the execution queue and rate limits the poller", async () => {
     const firstSession = await request("/api/auth/get-session", {
       headers: { cookie: firstCookie },
