@@ -20,6 +20,17 @@ const EnvironmentSchema = z
       .default("__Host-backlog_session"),
     GOOGLE_CLIENT_ID: OptionalNonEmptyStringSchema,
     GOOGLE_CLIENT_SECRET: OptionalNonEmptyStringSchema,
+    /* Single-value header that the edge in front of the API overwrites with the client address,
+       such as `cf-connecting-ip`. Unset keeps Better Auth's `x-forwarded-for` default. Set it only
+       when the origin accepts traffic from that edge alone, or a client can forge the header. */
+    AUTH_CLIENT_IP_HEADER: z.preprocess(
+      (value) => (value === "" ? undefined : value),
+      z
+        .string()
+        .regex(/^[A-Za-z0-9_-]+$/)
+        .transform((value) => value.toLowerCase())
+        .optional(),
+    ),
     AUTH_DATABASE_URL: z.url(),
     APP_DATABASE_URL: z.url(),
     DATABASE_SSL: BooleanStringSchema.default(false),

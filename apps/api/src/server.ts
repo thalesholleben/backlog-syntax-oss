@@ -10,7 +10,7 @@ const app = createProductApp({ config, pools });
 
 const server = serve({ fetch: app.fetch, hostname: config.API_HOST, port: config.API_PORT });
 const stopHousekeeping = config.HOUSEKEEPING_ENABLED
-  ? startLeaseHousekeeping(pools.app, config.HOUSEKEEPING_INTERVAL_MS)
+  ? startLeaseHousekeeping(pools.app, config.HOUSEKEEPING_INTERVAL_MS, pools.auth)
   : () => undefined;
 
 async function shutdown(): Promise<void> {

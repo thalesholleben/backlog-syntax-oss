@@ -44,6 +44,7 @@ services:
       SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-__Host-backlog_session}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      AUTH_CLIENT_IP_HEADER: ${AUTH_CLIENT_IP_HEADER:-}
       AUTH_DATABASE_URL: postgresql://backlog_auth:${BACKLOG_AUTH_PASSWORD:?BACKLOG_AUTH_PASSWORD is required}@db:5432/${POSTGRES_DB:-backlog_syntax}
       APP_DATABASE_URL: postgresql://backlog_app:${BACKLOG_APP_PASSWORD:?BACKLOG_APP_PASSWORD is required}@db:5432/${POSTGRES_DB:-backlog_syntax}
       DATABASE_SSL: "false"

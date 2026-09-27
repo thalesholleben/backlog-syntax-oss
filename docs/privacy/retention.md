@@ -6,7 +6,7 @@ Owner: Thales Gomes. Automated and manual controls are distinguished below.
 | --- | --- | --- | --- |
 | Active account and workspace | Account/workspace creation | While contract or legitimate purpose remains | Export, then authorized deletion or anonymization |
 | Account self-deletion | Fresh authenticated confirmation | Immediate for identity, sessions, OAuth tokens and memberships | Keep only a random minimal receipt; shared tenant data remains |
-| Sessions and recovery tokens | Creation | Until expiry or revocation | Delete |
+| Sessions and recovery tokens | Creation | Until expiry or revocation | Delete; a session's IP address is cleared at expiry by the housekeeping loop |
 | Invitations | Creation | Until expiry/revocation | Delete or retain minimal audit event |
 | Idempotency records | Accepted operation | 24 hours | Batched physical deletion under the housekeeping advisory lock |
 | Workspace audit trail | Event | While the shared workspace remains active; pseudonymized account references on self-delete | Delete with workspace or minimize |
@@ -15,9 +15,12 @@ Owner: Thales Gomes. Automated and manual controls are distinguished below.
 | Database backups | Launch/maintenance backup | Latest14 copies per destination, VPS and Google Drive; no daily schedule in the free panel license | Retention on successful new uploads; owner reviews expired-purpose copies during maintenance |
 | VPS backups | Existing Hostinger weekly automation | Provider's rolling plan retention; two snapshots present in launch inspection | Provider rotation; reconcile valid deletions before reopening a restore |
 
-The implemented housekeeping loop expires task leases and physically deletes expired idempotency
-payloads under an advisory lock. Session/invitation authorization expiry is enforced, but physical
-cleanup of all expired records and support-record review are not fully automated. EasyPanel's
+The implemented housekeeping loop expires task leases, physically deletes expired idempotency
+payloads and clears the IP address of expired sessions under an advisory lock. It does not delete
+expired session rows: a SQL delete would skip Better Auth's delete hooks, which revoke the OAuth
+tokens bound to the session, and the foreign key would unbind those tokens instead of ending them.
+Session/invitation authorization expiry is enforced, but physical cleanup of all expired records
+and support-record review are not fully automated. EasyPanel's
 native schedule is not entitled on this free license and has been disabled, not represented as
 active. Manual backup retention is applied on a new upload; the Hostinger VPS backup is weekly.
 Manual copies can therefore outlive14days; review them during maintenance and delete copies no

@@ -23,6 +23,14 @@ service inventory, backup locations and access procedures in private operations 
   `backlog_owner` is reserved for migrations and must not serve traffic.
 - Require `NODE_ENV=production`, HTTPS public origins, exact CORS, a host-only
   `__Host-` session cookie and `ALLOW_TEST_PRINCIPAL=false`.
+- Behind a CDN, set `AUTH_CLIENT_IP_HEADER` to the single-value header the edge
+  overwrites with the client address (`cf-connecting-ip` on Cloudflare), and only when
+  the origin accepts HTTPS from that edge alone; anywhere else the header is forgeable.
+  Unset, Better Auth reads `x-forwarded-for`, refuses the two-hop chain a CDN produces
+  and falls back to one rate-limit bucket per auth path shared by every client: three
+  sign-up or sign-in attempts per 10 seconds for the whole service, so one client can
+  keep everyone else out. The resolved address is also stored on the session, as the
+  privacy inventory declares.
 - Keep PostgreSQL private, with ENABLE/FORCE RLS on tenant tables and NOBYPASSRLS
   on both runtime roles. Production must not contain seed/demo credentials.
 - Configure backup destinations, retention, restores and maintenance separately in
@@ -49,7 +57,8 @@ The exact service names and provider-specific commands belong to private operati
 `/api/health` on the web app. After a web promotion, request an optimized image with
 a browser `Accept` header and confirm it returns `image/webp` quickly; a health check
 cannot see that path failing. Check HTTPS, cookie attributes, exact credentialed CORS
-and the expected MCP resource audience. Never print cookies, OAuth codes or tokens.
+and the expected MCP resource audience. After the first authentication request, the API
+log must not contain Better Auth's `could not determine a client IP` warning. Never print cookies, OAuth codes or tokens.
 Use only authorized disposable accounts for any production walkthrough; automated
 security, load, integration and destructive tests belong in isolated local infrastructure.
 
